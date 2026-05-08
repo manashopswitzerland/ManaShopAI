@@ -539,9 +539,11 @@ function renderConv(c){
   hs.textContent={human_pending:'Needs Human',human:'Active',ai:'AI',resolved:'Resolved'}[c.status]||c.status;
   hs.className=`status-pill ${c.status}`;
   renderMsgs(c.messages||[]);
-  document.getElementById('handoff-banner').style.display =c.status==='human_pending'&&c.channel!=='email'?'flex':'none';
-  document.getElementById('reply-area').style.display     =(c.status==='human'||c.status==='human_pending')?'flex':'none';
-  document.getElementById('resolved-banner').style.display=c.status==='resolved'?'block':'none';
+  const isEmailPending = c.status==='human_pending' && c.channel==='email';
+  const isHumanActive  = c.status==='human';
+  document.getElementById('handoff-banner').style.display  = c.status==='human_pending'&&!isEmailPending?'flex':'none';
+  document.getElementById('reply-area').style.display      = (isHumanActive||isEmailPending)?'flex':'none';
+  document.getElementById('resolved-banner').style.display = c.status==='resolved'?'block':'none';
   if(c.status==='human'||c.status==='human_pending'){
     const rb=document.getElementById('reply-badge');rb.textContent=chLabel;rb.className=`badge ${cl}`;
     const ta=document.getElementById('reply-textarea');

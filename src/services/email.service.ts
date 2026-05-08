@@ -7,9 +7,11 @@ sgMail.setApiKey(env.SENDGRID_API_KEY);
 
 function getLogoBase64(): string {
   try {
-    const logoPath = path.join(__dirname, '..', '..', 'public', 'unnamed.jpg');
+    // process.cwd() = project root on both local and Render
+    const logoPath = path.join(process.cwd(), 'public', 'unnamed.jpg');
     return fs.readFileSync(logoPath).toString('base64');
-  } catch {
+  } catch (e) {
+    console.warn('[Email] Logo not found:', e);
     return '';
   }
 }

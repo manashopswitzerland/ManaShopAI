@@ -1,0 +1,42 @@
+{
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
+    "claude": "^0.1.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "imap": "^0.8.19",
+    "mailparser": "^3.9.8",
+    "mongoose": "^9.6.0",
+    "node-cron": "^4.2.1",
+    "openai": "^6.35.0",
+    "strip-html": "^1.0.2",
+    "twilio": "^6.0.0",
+    "zod": "^4.3.6"
+  },
+  "name": "mana-ai-hub",
+  "version": "1.0.0",
+  "description": "Multi-Channel AI Automation Hub for Mana Shop & Mana Kendra",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "seed": "ts-node-dev --transpile-only src/scripts/seed-knowledge-base.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/imap": "^0.8.43",
+    "@types/mailparser": "^3.4.6",
+    "@types/node": "^25.6.0",
+    "@types/node-cron": "^3.0.11",
+    "pdfkit": "^0.18.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^6.0.3"
+  }
+}

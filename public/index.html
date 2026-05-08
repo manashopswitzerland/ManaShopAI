@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mana AI Hub — KI-Assistent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+<style>
+/* ─── Reset & Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:      #2D4A3E;
+  --green-mid:  #3D6355;
+  --green-light:#4E7D6A;
+  --ochre:      #C4853A;
+  --ochre-light:#D9A060;
+  --terra:      #8B3A2A;
+  --cream:      #F5EFE6;
+  --sand:       #F0E8D8;
+  --sand-dark:  #E2D5C0;
+  --text-dark:  #1C2B26;
+  --text-mid:   #4A5D57;
+  --text-light: #8A9E97;
+  --radius:     16px;
+  --radius-sm:  8px;
+  --shadow:     0 8px 32px rgba(45,74,62,0.12);
+  --shadow-sm:  0 2px 8px rgba(45,74,62,0.08);
+
+  /* per-store accent (overridden by JS) */
+  --accent:     var(--ochre);
+  --accent-l:   var(--ochre-light);
+  --avatar-bg:  var(--green);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--sand);
+  color: var(--text-dark);
+  overflow: hidden;
+}
+
+/* ─── Grain overlay ─────────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+.app {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: 1fr;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background: var(--green);
+  color: var(--cream);
+  overflow: hidden;
+  position: relative;
+}
+
+/* mandala watermark */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  right: -60px;
+  width: 280px;
+  height: 280px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='90' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='1'/%3E%3Ccircle cx='100' cy='100' r='70' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='1'/%3E%3Ccircle cx='100' cy='100' r='50' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='1'/%3E%3Ccircle cx='100' cy='100' r='30' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='1'/%3E%3Cline x1='10' y1='100' x2='190' y2='100' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3Cline x1='100' y1='10' x2='100' y2='190' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3Cline x1='27' y1='27' x2='173' y2='173' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3Cline x1='173' y1='27' x2='27' y2='173' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3Cellipse cx='100' cy='100' rx='90' ry='40' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3Cellipse cx='100' cy='100' rx='40' ry='90' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/svg%3E") center/contain no-repeat;
+  pointer-events: none;
+}
+
+.sidebar-header {
+  padding: 32px 24px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.brand-lotus {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.brand-lotus svg {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+  color: var(--cream);
+}
+
+.brand-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(245,239,230,0.6);
+  margin-top: 4px;
+  letter-spacing: 0.2px;
+}
+
+/* Store tabs */
+.store-tabs {
+  padding: 20px 24px 0;
+}
+
+.store-tabs-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(245,239,230,0.4);
+  margin-bottom: 10px;
+}
+
+.tab-group {
+  display: flex;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: rgba(245,239,230,0.55);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+.tab-btn:hover:not(.active) {
+  color: var(--cream);
+  background: rgba(255,255,255,0.07);
+}
+
+/* Prompts */
+.prompts-section {
+  padding: 20px 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.prompts-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(245,239,230,0.4);
+  margin-bottom: 12px;
+}
+
+.prompt-chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: rgba(245,239,230,0.85);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.prompt-chip::before {
+  content: '→';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+  opacity: 0;
+  transition: all 0.2s ease;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.prompt-chip:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.16);
+  padding-right: 30px;
+  color: #fff;
+}
+
+.prompt-chip:hover::before {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lang-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(245,239,230,0.4);
+  margin-right: 4px;
+}
+
+.lang-btn {
+  padding: 5px 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: transparent;
+  border-radius: 20px;
+  color: rgba(245,239,230,0.6);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.lang-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.lang-btn:hover:not(.active) {
+  border-color: rgba(255,255,255,0.3);
+  color: var(--cream);
+}
+
+/* ─── Main chat area ─────────────────────────────────────────────────────── */
+.main {
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle background watermark */
+.main::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='95' fill='none' stroke='rgba(45,74,62,0.04)' stroke-width='0.8'/%3E%3Ccircle cx='100' cy='100' r='75' fill='none' stroke='rgba(45,74,62,0.04)' stroke-width='0.8'/%3E%3Ccircle cx='100' cy='100' r='55' fill='none' stroke='rgba(45,74,62,0.04)' stroke-width='0.8'/%3E%3Ccircle cx='100' cy='100' r='35' fill='none' stroke='rgba(45,74,62,0.04)' stroke-width='0.8'/%3E%3Ccircle cx='100' cy='100' r='15' fill='none' stroke='rgba(45,74,62,0.04)' stroke-width='0.8'/%3E%3Cline x1='5' y1='100' x2='195' y2='100' stroke='rgba(45,74,62,0.03)' stroke-width='0.8'/%3E%3Cline x1='100' y1='5' x2='100' y2='195' stroke='rgba(45,74,62,0.03)' stroke-width='0.8'/%3E%3Cline x1='32' y1='32' x2='168' y2='168' stroke='rgba(45,74,62,0.03)' stroke-width='0.8'/%3E%3Cline x1='168' y1='32' x2='32' y2='168' stroke='rgba(45,74,62,0.03)' stroke-width='0.8'/%3E%3Cellipse cx='100' cy='100' rx='95' ry='40' fill='none' stroke='rgba(45,74,62,0.025)' stroke-width='0.8'/%3E%3Cellipse cx='100' cy='100' rx='40' ry='95' fill='none' stroke='rgba(45,74,62,0.025)' stroke-width='0.8'/%3E%3Cellipse cx='100' cy='100' rx='95' ry='65' fill='none' stroke='rgba(45,74,62,0.02)' stroke-width='0.8'/%3E%3C/svg%3E") center/contain no-repeat;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+/* Chat header */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  background: rgba(245,239,230,0.9);
+  border-bottom: 1px solid var(--sand-dark);
+  backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 2;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.store-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.store-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(196,133,58,0.2);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(196,133,58,0.15); }
+  50% { box-shadow: 0 0 0 6px rgba(196,133,58,0.05); }
+}
+
+.store-name-header {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.channel-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  background: var(--sand);
+  border: 1px solid var(--sand-dark);
+  border-radius: 20px;
+  color: var(--text-mid);
+  letter-spacing: 0.3px;
+}
+
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--sand-dark);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.clear-btn:hover {
+  background: var(--sand);
+  color: var(--text-dark);
+}
+
+/* Chat messages */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+  scroll-behavior: smooth;
+}
+
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--sand-dark); border-radius: 4px; }
+
+/* Welcome state */
+.welcome-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  padding: 40px;
+  gap: 16px;
+  animation: fadeUp 0.6s ease both;
+}
+
+.welcome-lotus {
+  width: 72px;
+  height: 72px;
+  opacity: 0.25;
+}
+
+.welcome-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--text-dark);
+  line-height: 1.3;
+}
+
+.welcome-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  color: var(--text-light);
+  font-style: italic;
+  max-width: 340px;
+  line-height: 1.6;
+}
+
+/* Message rows */
+.msg-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  animation: fadeUp 0.35s ease both;
+}
+
+.msg-row.user {
+  flex-direction: row-reverse;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--avatar-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.avatar svg {
+  width: 20px;
+  height: 20px;
+}
+
+.avatar.user-avatar {
+  background: var(--sand-dark);
+}
+
+.avatar.user-avatar svg { opacity: 0.6; }
+
+.bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 68%;
+}
+
+.msg-row.user .bubble-wrap { align-items: flex-end; }
+
+.bubble {
+  padding: 13px 16px;
+  border-radius: 18px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  position: relative;
+  word-break: break-word;
+}
+
+.bubble.assistant {
+  background: #fff;
+  color: var(--text-dark);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(226,213,192,0.6);
+}
+
+.bubble.user {
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 12px rgba(196,133,58,0.3);
+}
+
+.bubble.error {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.msg-time {
+  font-size: 11px;
+  color: var(--text-light);
+  padding: 0 4px;
+}
+
+/* Context sources */
+.context-sources {
+  margin-top: 6px;
+}
+
+.context-toggle {
+  background: none;
+  border: 1px solid var(--sand-dark);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: var(--text-light);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.context-toggle:hover {
+  background: var(--sand);
+  color: var(--text-mid);
+}
+
+.context-list {
+  display: none;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--sand);
+  border-radius: 8px;
+  border: 1px solid var(--sand-dark);
+}
+
+.context-list.open { display: block; }
+
+.context-list span {
+  display: block;
+  font-size: 11px;
+  color: var(--text-mid);
+  font-family: 'DM Sans', monospace;
+  padding: 1px 0;
+}
+
+/* Typing indicator */
+.typing-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  animation: fadeUp 0.25s ease both;
+}
+
+.typing-bubble {
+  background: #fff;
+  border: 1px solid rgba(226,213,192,0.6);
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-light);
+  animation: dotBounce 1.3s ease-in-out infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.15s; }
+.dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ─── Input area ─────────────────────────────────────────────────────────── */
+.input-area {
+  padding: 16px 28px 20px;
+  background: rgba(245,239,230,0.95);
+  border-top: 1px solid var(--sand-dark);
+  backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 2;
+}
+
+.input-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid var(--sand-dark);
+  border-radius: 16px;
+  padding: 10px 12px 10px 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(196,133,58,0.12), var(--shadow-sm);
+}
+
+textarea#msg-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14.5px;
+  color: var(--text-dark);
+  line-height: 1.55;
+  max-height: 120px;
+  min-height: 24px;
+  overflow-y: auto;
+}
+
+textarea#msg-input::placeholder { color: var(--text-light); }
+
+.send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(196,133,58,0.35);
+}
+
+.send-btn:hover { background: var(--ochre-light); transform: scale(1.05); }
+.send-btn:active { transform: scale(0.97); }
+.send-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.send-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; }
+
+.input-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 8px;
+}
+
+/* ─── Status bar ─────────────────────────────────────────────────────────── */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 28px;
+  background: var(--green);
+  font-size: 11px;
+  color: rgba(245,239,230,0.55);
+  position: relative;
+  z-index: 3;
+}
+
+.status-left, .status-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.conn-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 4px rgba(74,222,128,0.6);
+}
+
+.conn-dot.offline { background: #f87171; box-shadow: 0 0 4px rgba(248,113,113,0.6); }
+
+.powered-badge {
+  font-size: 10px;
+  opacity: 0.45;
+  font-style: italic;
+  font-family: 'Cormorant Garamond', serif;
+}
+
+/* ─── Error toast ────────────────────────────────────────────────────────── */
+.error-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-left: 4px solid var(--terra);
+  border-radius: 12px;
+  padding: 14px 18px;
+  max-width: 340px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 999;
+  animation: slideIn 0.3s ease both;
+  display: none;
+}
+
+.error-toast.show { display: block; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.error-toast-title {
+  font-weight: 500;
+  color: #991b1b;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.error-toast-msg {
+  color: #7f1d1d;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.error-toast-hint {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  border-radius: 6px;
+  font-family: 'DM Sans', monospace;
+  font-size: 11.5px;
+  color: var(--terra);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+
+  .sidebar {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open { transform: translateX(0); }
+
+  .mobile-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--green);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+    z-index: 10;
+  }
+
+  .mobile-menu-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: var(--cream);
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  .mobile-store-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    color: var(--cream);
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 40;
+  }
+
+  .sidebar-overlay.show { display: block; }
+
+  .chat-header { padding: 14px 16px; }
+  .chat-messages { padding: 16px; }
+  .input-area { padding: 12px 16px 16px; }
+  .status-bar { padding: 6px 16px; }
+}
+
+@media (min-width: 769px) {
+  .mobile-header { display: none !important; }
+  .sidebar-overlay { display: none !important; }
+}
+
+/* ─── Accent transitions ─────────────────────────────────────────────────── */
+.tab-btn, .store-dot, .send-btn, .input-wrap, .bubble.user,
+.conn-dot, .prompt-chip::before {
+  transition-property: background, border-color, box-shadow, color, opacity, transform;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* scrollbar styling */
+.prompts-section::-webkit-scrollbar { width: 3px; }
+.prompts-section::-webkit-scrollbar-track { background: transparent; }
+.prompts-section::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Mobile header (hidden on desktop) -->
+<div class="mobile-header" style="display:none">
+  <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <span class="mobile-store-name" id="mobile-store-label">Mana Shop</span>
+  <div style="width:40px"></div>
+</div>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+  <!-- ── Sidebar ───────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-lotus">
+        <!-- Lotus SVG -->
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 38C24 38 10 30 10 20C10 14 16 10 24 16C32 10 38 14 38 20C38 30 24 38 24 38Z" fill="rgba(196,133,58,0.25)" stroke="#C4853A" stroke-width="1.2"/>
+          <path d="M24 38C24 38 14 28 14 22C14 17 18 15 24 19C30 15 34 17 34 22C34 28 24 38 24 38Z" fill="rgba(196,133,58,0.35)" stroke="#C4853A" stroke-width="1"/>
+          <path d="M24 38C24 38 18 30 18 24C18 20 20 18 24 21C28 18 30 20 30 24C30 30 24 38 24 38Z" fill="rgba(196,133,58,0.5)" stroke="#C4853A" stroke-width="0.8"/>
+          <circle cx="24" cy="24" r="3" fill="#C4853A"/>
+          <path d="M24 38V42" stroke="#C4853A" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M16 40H32" stroke="#C4853A" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+        </svg>
+        <div>
+          <div class="brand-name">Mana AI Hub</div>
+        </div>
+      </div>
+      <div class="brand-tagline">KI-Assistent für Mana Shop &amp; Mana Kendra</div>
+    </div>
+
+    <div class="store-tabs">
+      <div class="store-tabs-label">Aktiver Shop</div>
+      <div class="tab-group">
+        <button class="tab-btn active" id="tab-shop" onclick="setStore('mana-shop')">Mana Shop</button>
+        <button class="tab-btn" id="tab-kendra" onclick="setStore('mana-kendra')">Mana Kendra</button>
+      </div>
+    </div>
+
+    <div class="prompts-section">
+      <div class="prompts-label">Vorschläge</div>
+      <div id="prompt-list"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="lang-toggle">
+        <span class="lang-label">Sprache</span>
+        <button class="lang-btn active" id="lang-de" onclick="setLang('de')">🇩🇪 DE</button>
+        <button class="lang-btn" id="lang-en" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ──────────────────────────────────────────────────── -->
+  <main class="main">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="store-indicator">
+          <div class="store-dot" id="store-dot"></div>
+          <span class="store-name-header" id="store-name-header">Mana Shop</span>
+        </div>
+        <span class="channel-badge">Web Chat</span>
+      </div>
+      <button class="clear-btn" onclick="clearChat()">Verlauf löschen</button>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="welcome-state" id="welcome-state">
+        <svg class="welcome-lotus" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 38C24 38 10 30 10 20C10 14 16 10 24 16C32 10 38 14 38 20C38 30 24 38 24 38Z" fill="rgba(45,74,62,0.12)" stroke="rgba(45,74,62,0.3)" stroke-width="1.2"/>
+          <path d="M24 38C24 38 14 28 14 22C14 17 18 15 24 19C30 15 34 17 34 22C34 28 24 38 24 38Z" fill="rgba(45,74,62,0.18)" stroke="rgba(45,74,62,0.3)" stroke-width="1"/>
+          <path d="M24 38C24 38 18 30 18 24C18 20 20 18 24 21C28 18 30 20 30 24C30 30 24 38 24 38Z" fill="rgba(45,74,62,0.25)" stroke="rgba(45,74,62,0.3)" stroke-width="0.8"/>
+          <circle cx="24" cy="24" r="3" fill="rgba(45,74,62,0.4)"/>
+          <path d="M24 38V42" stroke="rgba(45,74,62,0.3)" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <div class="welcome-title">Namaste. Wie kann ich<br/>Ihnen helfen?</div>
+        <div class="welcome-sub">Stellen Sie eine Frage zu Produkten, Therapien, Bestellungen oder Kursen.</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="msg-input" placeholder="Ihre Nachricht eingeben…" rows="1"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" aria-label="Senden">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter zum Senden &nbsp;·&nbsp; Shift+Enter für neue Zeile</div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-left">
+        <div class="status-item">
+          <div class="conn-dot" id="conn-dot"></div>
+          <span id="conn-label">Verbunden</span>
+        </div>
+        <div class="status-item">
+          <span>Shop:</span>
+          <span id="status-store">mana-shop</span>
+        </div>
+        <div class="status-item">Kanal: Web Chat</div>
+      </div>
+      <div class="status-right">
+        <div class="status-item">Tokens: <span id="token-count">0</span></div>
+        <span class="powered-badge">Powered by GPT-4o</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Error toast -->
+<div class="error-toast" id="error-toast">
+  <div class="error-toast-title">⚠ Backend nicht erreichbar</div>
+  <div class="error-toast-msg">Der KI-Server antwortet nicht. Starten Sie das Backend und öffnen Sie die UI über <strong>http://localhost:3000</strong>.</div>
+  <div class="error-toast-hint">$ npm run dev</div>
+</div>
+
+<script>
+// ── API base: always point at the Express server regardless of how the
+//    HTML is opened (Live Server, file://, etc.)
+const API_BASE = (window.location.port === '4000' || window.location.protocol === 'file:')
+  ? 'http://localhost:4000'
+  : window.location.origin;
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  storeId: 'mana-shop',
+  language: 'de',
+  sessionId: crypto.randomUUID(),
+  totalTokens: 0,
+  isTyping: false,
+  online: true,
+};
+
+// ── Store configs ──────────────────────────────────────────────────────────
+const storeConfig = {
+  'mana-shop': {
+    name: 'Mana Shop',
+    accent: '#C4853A',
+    accentLight: '#D9A060',
+    accentShadow: 'rgba(196,133,58,0.3)',
+    avatarBg: '#2D4A3E',
+    prompts: {
+      de: [
+        'Welche Ayurveda-Öle habt ihr?',
+        'Wie sind die Versandkosten?',
+        'Kann ich ein Produkt zurückgeben?',
+        'Gibt es B2B-Preise für Therapeuten?',
+        'Habt ihr Klangschalen im Sortiment?',
+      ],
+      en: [
+        'Which Ayurveda oils do you have?',
+        'What are the shipping costs?',
+        'How do I return a product?',
+        'Do you offer B2B prices?',
+        'Do you sell singing bowls?',
+      ],
+    },
+  },
+  'mana-kendra': {
+    name: 'Mana Kendra',
+    accent: '#2D4A3E',
+    accentLight: '#3D6355',
+    accentShadow: 'rgba(45,74,62,0.3)',
+    avatarBg: '#8B3A2A',
+    prompts: {
+      de: [
+        'Was kostet eine 60-Min.-Massage?',
+        'Werden Therapien von der Krankenkasse übernommen?',
+        'Welche Kurse gibt es 2026?',
+        'Wie buche ich einen Termin?',
+        'Was ist Shirodhara?',
+      ],
+      en: [
+        'How much does a 60-min massage cost?',
+        'Is treatment covered by health insurance?',
+        'What courses are available in 2026?',
+        'How do I book an appointment?',
+        'What is Shirodhara?',
+      ],
+    },
+  },
+};
+
+// ── Lotus SVG (assistant avatar) ───────────────────────────────────────────
+function lotusAvatarSVG(color = '#fff') {
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M24 36C24 36 12 28 12 19C12 13 17 10 24 15C31 10 36 13 36 19C36 28 24 36 24 36Z" fill="rgba(255,255,255,0.15)" stroke="${color}" stroke-width="1.2"/>
+    <path d="M24 36C24 36 15 27 15 21C15 16.5 18.5 15 24 18.5C29.5 15 33 16.5 33 21C33 27 24 36 24 36Z" fill="rgba(255,255,255,0.2)" stroke="${color}" stroke-width="0.9"/>
+    <path d="M24 36C24 36 19 29 19 23.5C19 20 21 18.5 24 21C27 18.5 29 20 29 23.5C29 29 24 36 24 36Z" fill="rgba(255,255,255,0.3)" stroke="${color}" stroke-width="0.7"/>
+    <circle cx="24" cy="22" r="2.5" fill="${color}"/>
+  </svg>`;
+}
+
+function userAvatarSVG() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="rgba(74,93,87,0.7)" stroke-width="1.5" stroke-linecap="round">
+    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+  </svg>`;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtTime(d = new Date()) {
+  return d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+}
+
+function applyAccent(cfg) {
+  document.documentElement.style.setProperty('--accent', cfg.accent);
+  document.documentElement.style.setProperty('--accent-l', cfg.accentLight);
+  document.documentElement.style.setProperty('--avatar-bg', cfg.avatarBg);
+}
+
+// ── Store switcher ─────────────────────────────────────────────────────────
+function setStore(id) {
+  state.storeId = id;
+  state.sessionId = crypto.randomUUID(); // fresh session per store
+
+  const cfg = storeConfig[id];
+  applyAccent(cfg);
+
+  document.getElementById('tab-shop').classList.toggle('active', id === 'mana-shop');
+  document.getElementById('tab-kendra').classList.toggle('active', id === 'mana-kendra');
+  document.getElementById('store-name-header').textContent = cfg.name;
+  document.getElementById('status-store').textContent = id;
+  document.getElementById('mobile-store-label').textContent = cfg.name;
+
+  renderPrompts();
+  clearChat(false);
+}
+
+// ── Language ───────────────────────────────────────────────────────────────
+function setLang(lang) {
+  state.language = lang;
+  document.getElementById('lang-de').classList.toggle('active', lang === 'de');
+  document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+  renderPrompts();
+}
+
+// ── Prompts ────────────────────────────────────────────────────────────────
+function renderPrompts() {
+  const list = document.getElementById('prompt-list');
+  const prompts = storeConfig[state.storeId].prompts[state.language];
+  list.innerHTML = prompts.map(p =>
+    `<button class="prompt-chip" onclick="usePrompt(this.textContent)">${p}</button>`
+  ).join('');
+}
+
+function usePrompt(text) {
+  const input = document.getElementById('msg-input');
+  input.value = text;
+  input.style.height = 'auto';
+  input.style.height = input.scrollHeight + 'px';
+  if (window.innerWidth <= 768) closeSidebar();
+  sendMessage();
+}
+
+// ── Chat clear ─────────────────────────────────────────────────────────────
+function clearChat(resetSession = true) {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = `
+    <div class="welcome-state" id="welcome-state">
+      <svg class="welcome-lotus" viewBox="0 0 48 48" fill="none">
+        <path d="M24 38C24 38 10 30 10 20C10 14 16 10 24 16C32 10 38 14 38 20C38 30 24 38 24 38Z" fill="rgba(45,74,62,0.12)" stroke="rgba(45,74,62,0.3)" stroke-width="1.2"/>
+        <path d="M24 38C24 38 14 28 14 22C14 17 18 15 24 19C30 15 34 17 34 22C34 28 24 38 24 38Z" fill="rgba(45,74,62,0.18)" stroke="rgba(45,74,62,0.3)" stroke-width="1"/>
+        <path d="M24 38C24 38 18 30 18 24C18 20 20 18 24 21C28 18 30 20 30 24C30 30 24 38 24 38Z" fill="rgba(45,74,62,0.25)" stroke="rgba(45,74,62,0.3)" stroke-width="0.8"/>
+        <circle cx="24" cy="24" r="3" fill="rgba(45,74,62,0.4)"/>
+        <path d="M24 38V42" stroke="rgba(45,74,62,0.3)" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <div class="welcome-title">Namaste. Wie kann ich<br/>Ihnen helfen?</div>
+      <div class="welcome-sub">Stellen Sie eine Frage zu Produkten, Therapien, Bestellungen oder Kursen.</div>
+    </div>`;
+  if (resetSession) state.sessionId = crypto.randomUUID();
+}
+
+// ── Message rendering ──────────────────────────────────────────────────────
+function removeWelcome() {
+  const w = document.getElementById('welcome-state');
+  if (w) w.remove();
+}
+
+function appendMessage(role, text, contextSources = []) {
+  removeWelcome();
+  const cfg = storeConfig[state.storeId];
+  const container = document.getElementById('chat-messages');
+
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const avatarHtml = role === 'assistant'
+    ? `<div class="avatar" style="background:${cfg.avatarBg}">${lotusAvatarSVG('#fff')}</div>`
+    : `<div class="avatar user-avatar">${userAvatarSVG()}</div>`;
+
+  let sourcesHtml = '';
+  if (role === 'assistant' && contextSources.length > 0) {
+    const items = contextSources.map(s => `<span>• ${s}</span>`).join('');
+    sourcesHtml = `
+      <div class="context-sources">
+        <button class="context-toggle" onclick="toggleSources(this)">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="5" y="8" text-anchor="middle" font-size="7" fill="currentColor">i</text></svg>
+          ${contextSources.length} Quellen
+        </button>
+        <div class="context-list">${items}</div>
+      </div>`;
+  }
+
+  // Preserve line breaks
+  const safeText = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br/>');
+
+  row.innerHTML = `
+    ${avatarHtml}
+    <div class="bubble-wrap">
+      <div class="bubble ${role} ${role === 'assistant' && text.startsWith('⚠') ? 'error' : ''}">${safeText}</div>
+      <div class="msg-time">${fmtTime()}</div>
+      ${sourcesHtml}
+    </div>`;
+
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+  return row;
+}
+
+function toggleSources(btn) {
+  const list = btn.nextElementSibling;
+  list.classList.toggle('open');
+  btn.textContent = list.classList.contains('open')
+    ? btn.textContent.replace('▸','▾')
+    : btn.textContent.replace('▾','▸');
+}
+
+// ── Typing indicator ───────────────────────────────────────────────────────
+let typingEl = null;
+function showTyping() {
+  removeWelcome();
+  const cfg = storeConfig[state.storeId];
+  const container = document.getElementById('chat-messages');
+  typingEl = document.createElement('div');
+  typingEl.className = 'typing-row';
+  typingEl.innerHTML = `
+    <div class="avatar" style="background:${cfg.avatarBg}">${lotusAvatarSVG('#fff')}</div>
+    <div class="typing-bubble">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>`;
+  container.appendChild(typingEl);
+  container.scrollTop = container.scrollHeight;
+}
+
+function hideTyping() {
+  if (typingEl) { typingEl.remove(); typingEl = null; }
+}
+
+// ── Connection status ──────────────────────────────────────────────────────
+function setOnline(online) {
+  state.online = online;
+  const dot = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  if (online) {
+    dot.classList.remove('offline');
+    label.textContent = 'Verbunden';
+  } else {
+    dot.classList.add('offline');
+    label.textContent = 'Offline';
+  }
+}
+
+// ── Error toast ────────────────────────────────────────────────────────────
+let toastTimer;
+function showErrorToast() {
+  const t = document.getElementById('error-toast');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 7000);
+}
+
+// ── Send message ───────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text || state.isTyping) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  state.isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+
+  appendMessage('user', text);
+  showTyping();
+
+  try {
+    const res = await fetch(`${API_BASE}/chat/web`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        sessionId: state.sessionId,
+        storeId: state.storeId,
+        language: state.language,
+      }),
+    });
+
+    hideTyping();
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => null);
+      const errMsg = errBody?.error ?? `HTTP ${res.status}`;
+      const hint = res.status === 405
+        ? '\n\nHinweis: Bitte öffnen Sie die UI über http://localhost:3000 (nicht direkt als Datei).'
+        : res.status === 400
+        ? '\n\nHinweis: Ungültige Anfrage — prüfen Sie die Eingabe.'
+        : '';
+      appendMessage('assistant', `⚠ Fehler: ${errMsg}${hint}`);
+      setOnline(false);
+    } else {
+      const data = await res.json();
+      setOnline(true);
+      appendMessage('assistant', data.reply, data.contextSources || []);
+      if (data.tokensUsed) {
+        state.totalTokens += data.tokensUsed;
+        document.getElementById('token-count').textContent = state.totalTokens.toLocaleString('de-CH');
+      }
+    }
+  } catch (err) {
+    hideTyping();
+    setOnline(false);
+    showErrorToast();
+    appendMessage('assistant', '⚠ Backend nicht erreichbar. Bitte starten Sie den Server mit:\n\nnpm run dev');
+  } finally {
+    state.isTyping = false;
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+// ── Textarea auto-resize ───────────────────────────────────────────────────
+const textarea = document.getElementById('msg-input');
+textarea.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+textarea.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// ── Mobile sidebar ─────────────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(function init() {
+  renderPrompts();
+  applyAccent(storeConfig['mana-shop']);
+  document.getElementById('msg-input').focus();
+
+  // Probe backend connection
+  fetch(`${API_BASE}/health`).then(r => setOnline(r.ok)).catch(() => setOnline(false));
+})();
+</script>
+</body>
+</html>

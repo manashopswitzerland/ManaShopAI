@@ -245,15 +245,15 @@
 
   function startPolling() {
     if (pollTimer) return;
-    // First: snapshot all existing messages so we don't re-show them
+    console.log('[ManaChat] Human mode — starting polling for', sessionId);
     fetch(`${cfg.apiBase}/chat/web/messages/${sessionId}?since=1970-01-01`)
       .then(r => r.json())
       .then(data => {
+        console.log('[ManaChat] Snapshot:', data.messages?.length, 'msgs, status:', data.status);
         (data.messages || []).forEach(m => shownMessages.add(msgKey(m)));
-        // Now start polling for anything NEW after this snapshot
         pollTimer = setInterval(pollMessages, 3000);
       })
-      .catch(() => { pollTimer = setInterval(pollMessages, 3000); });
+      .catch(e => { console.error('[ManaChat] Snapshot error:', e); pollTimer = setInterval(pollMessages, 3000); });
   }
 
   function stopPolling() {
@@ -264,6 +264,7 @@
     try {
       const res = await fetch(`${cfg.apiBase}/chat/web/messages/${sessionId}?since=1970-01-01`);
       const data = await res.json();
+      console.log('[ManaChat] Poll —', data.messages?.length, 'total msgs, status:', data.status);
 
       if (data.status === 'resolved' || data.status === 'ai') {
         humanMode = false; stopPolling();
@@ -275,6 +276,7 @@
         const key = msgKey(m);
         if (shownMessages.has(key)) return;
         shownMessages.add(key);
+        console.log('[ManaChat] New message from agent:', m.content.slice(0, 40));
         addBotMessage(m.content);
         hasNew = true;
       });
@@ -283,7 +285,7 @@
         const msgs = document.getElementById('mc-messages');
         msgs.scrollTop = msgs.scrollHeight;
       }
-    } catch { /* silent */ }
+    } catch(e) { console.error('[ManaChat] Poll error:', e); }
   }
 
   // ── Send ──────────────────────────────────────────────────────────

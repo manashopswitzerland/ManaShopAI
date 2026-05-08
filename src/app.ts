@@ -13,7 +13,7 @@ import knowledgeRoute from './routes/knowledge.route';
 const app = express();
 
 // CORS — allow Shopify storefronts and any origin for the widget
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'OPTIONS'] }));
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }));
 
 // Body parsers — urlencoded required for Twilio + SendGrid Inbound Parse
 app.use(express.json({ limit: '1mb' }));

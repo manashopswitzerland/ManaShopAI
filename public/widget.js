@@ -192,6 +192,9 @@
   // ── State ─────────────────────────────────────────────────────────
   let open = false;
   let busy = false;
+  let humanMode = false;
+  let lastMessageTime = new Date().toISOString();
+  let pollTimer = null;
 
   function togglePanel() {
     open = !open;
@@ -237,6 +240,40 @@
     if (t) t.remove();
   }
 
+  // ── Human mode polling ────────────────────────────────────────────
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(pollMessages, 3000);
+  }
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  async function pollMessages() {
+    try {
+      const res = await fetch(
+        `${cfg.apiBase}/chat/web/messages/${sessionId}?since=${encodeURIComponent(lastMessageTime)}`
+      );
+      const data = await res.json();
+
+      // Update human mode status
+      if (data.status === 'resolved' || data.status === 'ai') {
+        humanMode = false; stopPolling();
+      }
+
+      // Show any new messages from the human agent
+      if (data.messages && data.messages.length > 0) {
+        data.messages.forEach(m => {
+          if (m.role === 'assistant') addBotMessage(m.content);
+        });
+        lastMessageTime = data.messages[data.messages.length - 1].timestamp;
+        const msgs = document.getElementById('mc-messages');
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+    } catch { /* silent */ }
+  }
+
   // ── Send ──────────────────────────────────────────────────────────
   async function sendMessage() {
     const input = document.getElementById('mc-input');
@@ -249,6 +286,22 @@
     document.getElementById('mc-send').disabled = true;
 
     addUserMessage(text);
+
+    // In human mode — just store message silently, agent will reply via polling
+    if (humanMode) {
+      try {
+        await fetch(`${cfg.apiBase}/chat/web`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, sessionId, storeId: cfg.store }),
+        });
+      } catch { /* silent */ }
+      busy = false;
+      document.getElementById('mc-send').disabled = false;
+      input.focus();
+      return;
+    }
+
     showTyping();
 
     try {
@@ -259,6 +312,14 @@
       });
       const data = await res.json();
       hideTyping();
+      lastMessageTime = new Date().toISOString();
+
+      // Detect handoff
+      if (data.handoffTriggered || data.conversationStatus === 'human_pending' || data.conversationStatus === 'human') {
+        humanMode = true;
+        startPolling();
+      }
+
       addBotMessage(data.reply || 'Es tut mir leid, bitte versuche es erneut.');
     } catch {
       hideTyping();
@@ -270,8 +331,23 @@
     input.focus();
   }
 
+  // Also start polling if page loads mid-conversation in human mode
+  async function checkInitialStatus() {
+    try {
+      const res = await fetch(`${cfg.apiBase}/chat/web/messages/${sessionId}?since=1970-01-01`);
+      const data = await res.json();
+      if (data.status === 'human_pending' || data.status === 'human') {
+        humanMode = true; startPolling();
+      }
+    } catch { /* silent */ }
+  }
+
   document.getElementById('mc-send').addEventListener('click', sendMessage);
   document.getElementById('mc-input').addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
+
+  // Check status on open
+  const _origToggle = togglePanel;
+  checkInitialStatus();
 })();

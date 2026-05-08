@@ -5,7 +5,7 @@
   const cfg = Object.assign({
     store:    'mana-shop',
     lang:     'de',
-    apiBase:  'https://2605-2400-adc5-117-8d00-85a6-d6ac-eec0-b5b9.ngrok-free.app',
+    apiBase:  'https://manashopai.onrender.com',
     position: 'right',          // 'right' | 'left'
     accentColor: '#2D4A3E',
     bubbleColor: '#C4853A',

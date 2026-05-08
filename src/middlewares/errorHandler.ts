@@ -11,14 +11,12 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   const statusCode = err.statusCode ?? 500;
-  const message = statusCode === 500 ? 'Internal server error' : err.message;
+  const message = err.message || 'Internal server error';
 
-  if (statusCode === 500) {
-    console.error('[ErrorHandler] Unhandled error:', err);
-  }
+  console.error('[ErrorHandler] Unhandled error:', err);
 
   res.status(statusCode).json({
     error: message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
   });
 }

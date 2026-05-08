@@ -2,6 +2,7 @@ import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 import { env } from '../config/env';
 import { brainService } from './brain.service';
+import { Conversation } from '../models/conversation.model';
 
 function createImapClient(): Imap {
   return new Imap({
@@ -79,17 +80,22 @@ async function processEmail(email: ParsedEmail): Promise<void> {
     const storeId = senderEmail.includes('kendra') ? 'mana-kendra' : 'mana-shop';
     const sessionId = `email:${senderEmail}`;
 
-    // Store message in conversation + mark as human_pending so it appears in dashboard
-    await brainService.process({
-      userMessage:  `Subject: ${email.subject}\n\n${email.text}`,
+    // 1. Let AI generate a reply (stores user message in conversation)
+    const output = await brainService.process({
+      userMessage:     `Subject: ${email.subject}\n\n${email.text}`,
       sessionId,
-      channel:      'email',
+      channel:         'email',
       storeId,
       customerContact: senderEmail,
-      requestHuman: true, // always route email to dashboard for manual reply
     });
 
-    console.log(`[IMAP] Email stored in dashboard — awaiting manual reply`);
+    // 2. Save AI draft + mark conversation as human_pending (needs review before sending)
+    await Conversation.findOneAndUpdate(
+      { sessionId, channel: 'email' },
+      { status: 'human_pending', draftReply: output.reply },
+    );
+
+    console.log(`[IMAP] AI draft ready in dashboard — awaiting your review & send`);
   } catch (err) {
     console.error(`[IMAP] Failed to process email from ${email.from}:`, err);
   }

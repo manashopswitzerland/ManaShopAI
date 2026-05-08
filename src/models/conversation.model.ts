@@ -13,6 +13,7 @@ export interface IConversation extends Document {
   storeId: StoreId;
   status: ConversationStatus;
   customerContact: string;
+  draftReply: string;
   messages: IMessage[];
   createdAt: Date;
   updatedAt: Date;
@@ -48,6 +49,7 @@ const ConversationSchema = new Schema<IConversation>(
       index: true,
     },
     customerContact: { type: String, default: '' },
+    draftReply: { type: String, default: '' },
     messages: { type: [MessageSchema], default: [] },
   },
   {

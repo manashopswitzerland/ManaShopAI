@@ -100,13 +100,16 @@ export async function replyToConversation(
       return;
     }
 
-    if (conversation.status !== 'human') {
-      res.status(409).json({ error: 'Conversation must be in human mode to reply. Call /handoff first.' });
+    if (conversation.status !== 'human' && conversation.status !== 'human_pending') {
+      res.status(409).json({ error: 'Conversation must be pending or active to reply.' });
       return;
     }
+    // Auto-promote to human when replying
+    if (conversation.status === 'human_pending') conversation.status = 'human';
 
-    // Store reply in conversation
+    // Store reply and clear draft
     conversation.messages.push({ role: 'assistant', content: message.trim(), timestamp: new Date() });
+    conversation.draftReply = '';
     await conversation.save();
 
     // Dispatch to the correct platform

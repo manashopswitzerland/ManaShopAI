@@ -2,7 +2,6 @@ import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 import { env } from '../config/env';
 import { brainService } from './brain.service';
-import { sendEmail } from './email.service';
 
 function createImapClient(): Imap {
   return new Imap({
@@ -74,35 +73,25 @@ function fetchUnseen(imap: Imap): Promise<ParsedEmail[]> {
 }
 
 async function processEmail(email: ParsedEmail): Promise<void> {
-  console.log(`[IMAP] Processing email from: ${email.from} | ${email.subject}`);
+  console.log(`[IMAP] New email from: ${email.from} | ${email.subject}`);
   try {
     const senderEmail = email.from.toLowerCase().replace(/.*<([^>]+)>.*/, '$1').trim();
     const storeId = senderEmail.includes('kendra') ? 'mana-kendra' : 'mana-shop';
     const sessionId = `email:${senderEmail}`;
 
-    const output = await brainService.process({
-      userMessage:     `Subject: ${email.subject}\n\n${email.text}`,
+    // Store message in conversation + mark as human_pending so it appears in dashboard
+    await brainService.process({
+      userMessage:  `Subject: ${email.subject}\n\n${email.text}`,
       sessionId,
-      channel:         'email',
+      channel:      'email',
       storeId,
       customerContact: senderEmail,
+      requestHuman: true, // always route email to dashboard for manual reply
     });
 
-    // Don't auto-reply when conversation is in human mode — the agent replies from dashboard
-    if (output.conversationStatus === 'human' || output.conversationStatus === 'human_pending') {
-      console.log(`[IMAP] Conversation in human mode — skipping auto-reply to ${email.from}`);
-      return;
-    }
-
-    await sendEmail({
-      to:      email.from,
-      subject: `Re: ${email.subject}`,
-      text:    output.reply,
-    });
-
-    console.log(`[IMAP] Reply sent to: ${email.from}`);
+    console.log(`[IMAP] Email stored in dashboard — awaiting manual reply`);
   } catch (err) {
-    console.error(`[IMAP] Failed to reply to ${email.from}:`, err);
+    console.error(`[IMAP] Failed to process email from ${email.from}:`, err);
   }
 }
 

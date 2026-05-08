@@ -193,7 +193,7 @@
   let open = false;
   let busy = false;
   let humanMode = false;
-  let lastMessageTime = new Date().toISOString();
+  let shownMessages = new Set(); // track by content+role to avoid duplicates
   let pollTimer = null;
 
   function togglePanel() {
@@ -241,9 +241,19 @@
   }
 
   // ── Human mode polling ────────────────────────────────────────────
+  function msgKey(m) { return m.timestamp + '|' + m.role + '|' + m.content.slice(0, 60); }
+
   function startPolling() {
     if (pollTimer) return;
-    pollTimer = setInterval(pollMessages, 3000);
+    // First: snapshot all existing messages so we don't re-show them
+    fetch(`${cfg.apiBase}/chat/web/messages/${sessionId}?since=1970-01-01`)
+      .then(r => r.json())
+      .then(data => {
+        (data.messages || []).forEach(m => shownMessages.add(msgKey(m)));
+        // Now start polling for anything NEW after this snapshot
+        pollTimer = setInterval(pollMessages, 3000);
+      })
+      .catch(() => { pollTimer = setInterval(pollMessages, 3000); });
   }
 
   function stopPolling() {
@@ -252,22 +262,24 @@
 
   async function pollMessages() {
     try {
-      const res = await fetch(
-        `${cfg.apiBase}/chat/web/messages/${sessionId}?since=${encodeURIComponent(lastMessageTime)}`
-      );
+      const res = await fetch(`${cfg.apiBase}/chat/web/messages/${sessionId}?since=1970-01-01`);
       const data = await res.json();
 
-      // Update human mode status
       if (data.status === 'resolved' || data.status === 'ai') {
         humanMode = false; stopPolling();
       }
 
-      // Show any new messages from the human agent
-      if (data.messages && data.messages.length > 0) {
-        data.messages.forEach(m => {
-          if (m.role === 'assistant') addBotMessage(m.content);
-        });
-        lastMessageTime = data.messages[data.messages.length - 1].timestamp;
+      let hasNew = false;
+      (data.messages || []).forEach(m => {
+        if (m.role !== 'assistant') return;
+        const key = msgKey(m);
+        if (shownMessages.has(key)) return;
+        shownMessages.add(key);
+        addBotMessage(m.content);
+        hasNew = true;
+      });
+
+      if (hasNew) {
         const msgs = document.getElementById('mc-messages');
         msgs.scrollTop = msgs.scrollHeight;
       }
@@ -312,15 +324,15 @@
       });
       const data = await res.json();
       hideTyping();
-      lastMessageTime = new Date().toISOString();
 
       // Detect handoff
       if (data.handoffTriggered || data.conversationStatus === 'human_pending' || data.conversationStatus === 'human') {
         humanMode = true;
-        startPolling();
       }
 
       addBotMessage(data.reply || 'Es tut mir leid, bitte versuche es erneut.');
+
+      if (humanMode) startPolling();
     } catch {
       hideTyping();
       addBotMessage('Verbindungsfehler. Bitte versuche es später erneut.');

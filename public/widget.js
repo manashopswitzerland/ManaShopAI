@@ -200,7 +200,7 @@
     open = !open;
     panel.classList.toggle('open', open);
     if (open && document.getElementById('mc-messages').children.length === 0) {
-      addBotMessage('Hallo! 👋 Wie kann ich dir heute helfen?');
+      addBotMessage('Hallo! Ich bin die KI-Assistentin von Mana. Ich helfe dir gerne bei Fragen zu unseren Produkten, Behandlungen und Bestellungen. Falls du deine Antwort nicht findest, verbinde ich dich mit einem echten Mitarbeiter.');
     }
     if (open) setTimeout(() => document.getElementById('mc-input').focus(), 300);
   }

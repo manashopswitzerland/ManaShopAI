@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mana Agent Hub</string>
+    <string name="title_activity_main">Mana Agent Hub</string>
+    <string name="package_name">ch.mana.agenthub</string>
+    <string name="custom_url_scheme">ch.mana.agenthub</string>
+</resources>

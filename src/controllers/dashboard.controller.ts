@@ -3,6 +3,7 @@ import twilio from 'twilio';
 import { Conversation } from '../models/conversation.model';
 import { sendEmail } from '../services/email.service';
 import { env } from '../config/env';
+import { broadcastNotification } from '../services/notifications';
 
 // ── List conversations ──────────────────────────────────────────────────────
 
@@ -73,6 +74,13 @@ export async function handoffConversation(
 
     conversation.status = 'human';
     await conversation.save();
+
+    const contact = conversation.customerContact || conversation.sessionId;
+    broadcastNotification(
+      'Customer Needs You',
+      `${contact} is requesting a human agent`,
+      { screen: 'conversation', conversationId: String(conversation._id) }
+    ).catch(() => {});
 
     res.json({ success: true, status: conversation.status });
   } catch (err) {

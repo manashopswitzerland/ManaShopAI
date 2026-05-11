@@ -9,6 +9,7 @@ import syncRoute from './routes/sync.route';
 import shopifyAuthRoute from './routes/shopify-auth.route';
 import dashboardRoute from './routes/dashboard.route';
 import knowledgeRoute from './routes/knowledge.route';
+import notificationsRoute from './routes/notifications.route';
 
 const app = express();
 
@@ -30,8 +31,9 @@ app.use('/chat/web', chatRoute);
 app.use('/webhooks/email', emailRoute);
 app.use('/admin/sync-shopify', syncRoute);
 app.use('/auth/shopify', shopifyAuthRoute);
-app.use('/api/dashboard', dashboardRoute);
-app.use('/api/knowledge',  knowledgeRoute);
+app.use('/api/dashboard',      dashboardRoute);
+app.use('/api/knowledge',      knowledgeRoute);
+app.use('/api/notifications',  notificationsRoute);
 
 // Static files AFTER API routes
 app.use(express.static(path.join(__dirname, '..', 'public')));

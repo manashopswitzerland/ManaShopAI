@@ -1,10 +1,15 @@
 {
   "dependencies": {
+    "@capacitor/android": "^8.3.3",
+    "@capacitor/cli": "^8.3.3",
+    "@capacitor/core": "^8.3.3",
+    "@capacitor/push-notifications": "^8.0.4",
     "@sendgrid/mail": "^8.1.6",
     "claude": "^0.1.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "firebase-admin": "^13.9.0",
     "imap": "^0.8.19",
     "mailparser": "^3.9.8",
     "mongoose": "^9.6.0",

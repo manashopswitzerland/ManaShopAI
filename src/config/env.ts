@@ -35,6 +35,9 @@ const optionalSchema = z.object({
   IMAP_PORT: z.string().default('993'),
   IMAP_USER: z.string().default(''),
   IMAP_PASSWORD: z.string().default(''),
+
+  // Firebase Cloud Messaging (push notifications for Android APK)
+  FCM_SERVICE_ACCOUNT_JSON: z.string().default(''),
 });
 
 const envSchema = requiredSchema.merge(optionalSchema);

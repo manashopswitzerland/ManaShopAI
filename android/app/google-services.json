@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "329769768365",
+    "project_id": "mana-shop-c5b51",
+    "storage_bucket": "mana-shop-c5b51.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:329769768365:android:975aa7dd550afbfc113d24",
+        "android_client_info": {
+          "package_name": "ch.mana.agenthub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGZz9RDB7BjD9wvqlUZZC4RzFA1Mz4OpU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

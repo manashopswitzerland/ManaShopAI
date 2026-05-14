@@ -455,7 +455,12 @@ export class BrainService {
     if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage)) {
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
       // Remove URLs from the answer — they'll appear in the thank-you after contact is saved
-      result.text = result.text.replace(/https?:\/\/\S+/g, '').replace(/\s{2,}/g, ' ').trimEnd();
+      result.text = result.text
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/\b[\w-]+\.(ch|com|de|at|org|net|io|app)(\/\S*)?/g, '')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trimEnd();
       result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;
       conversation.awaitingContact = true;
     }

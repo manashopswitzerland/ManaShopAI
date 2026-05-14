@@ -15,6 +15,8 @@ export interface IConversation extends Document {
   customerContact: string;
   draftReply: string;
   messages: IMessage[];
+  awaitingContact: boolean;
+  leadCaptured: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +53,8 @@ const ConversationSchema = new Schema<IConversation>(
     customerContact: { type: String, default: '' },
     draftReply: { type: String, default: '' },
     messages: { type: [MessageSchema], default: [] },
+    awaitingContact: { type: Boolean, default: false },
+    leadCaptured: { type: Boolean, default: false },
   },
   {
     timestamps: true,

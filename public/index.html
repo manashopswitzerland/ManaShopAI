@@ -1136,8 +1136,12 @@ function appendMessage(role, text, contextSources = []) {
       </div>`;
   }
 
-  // Preserve line breaks
-  const safeText = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br/>');
+  // Preserve line breaks and ensure bullets are on their own lines
+  const safeText = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/ • /g, '\n• ')
+    .replace(/([^\n])•/g, '$1\n•')
+    .replace(/\n/g,'<br/>');
 
   row.innerHTML = `
     ${avatarHtml}

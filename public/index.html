@@ -482,6 +482,7 @@ body::before {
   line-height: 1.65;
   position: relative;
   word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .bubble.assistant {
@@ -1136,12 +1137,11 @@ function appendMessage(role, text, contextSources = []) {
       </div>`;
   }
 
-  // Preserve line breaks and ensure bullets are on their own lines
+  // white-space:pre-wrap on .bubble handles \n natively — no <br/> needed
   const safeText = text
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/ • /g, '\n• ')
-    .replace(/([^\n])•/g, '$1\n•')
-    .replace(/\n/g,'<br/>');
+    .replace(/([^\n])•/g, '$1\n•');
 
   row.innerHTML = `
     ${avatarHtml}

@@ -454,13 +454,15 @@ export class BrainService {
     // 7. If service interest detected and no lead yet, append contact request
     if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage)) {
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
-      // Remove URLs from the answer — they'll appear in the thank-you after contact is saved
+      // Remove URLs + their label text — link appears only after contact is saved
       result.text = result.text
+        .replace(/[^\n.]*?(buch(en|ung)|here|hier|link|more info|mehr info|learn more|direkt|click|klick)[^\n]*?(https?:\/\/\S+|[\w-]+\.(ch|com|de|at|org|net|io|app)(\/\S*)?)/gi, '')
         .replace(/https?:\/\/\S+/g, '')
         .replace(/\b[\w-]+\.(ch|com|de|at|org|net|io|app)(\/\S*)?/g, '')
+        .replace(/\n[ \t]*\n[ \t]*\n/g, '\n\n')
         .replace(/[ \t]{2,}/g, ' ')
-        .replace(/\n{3,}/g, '\n\n')
-        .trimEnd();
+        .replace(/:\s*\n/g, '\n')
+        .trim();
       result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;
       conversation.awaitingContact = true;
     }

@@ -178,13 +178,15 @@ VERSAND & LIEFERZEITEN:
 Versand startet erst nach bestätigtem Zahlungseingang.
 (English: Standard 3–12 days, Priority 1–3 days, Express next business day before 2PM. All from payment confirmation.)
 
-FORMATIERUNG:
-• Verwende • Aufzählungspunkte wenn du mehrere Produkte, Optionen oder Infos auflistest
-• Trenne Punkte mit einer Leerzeile für bessere Lesbarkeit
+LÄNGE & FORMAT – sehr wichtig:
+• Antworte KURZ: maximal 3–4 Sätze oder 3–4 Aufzählungspunkte. Nie länger.
+• Wenn du Optionen auflistest: maximal 3 Punkte, keine langen Erklärungen dahinter
 • Verwende KEINE Markdown-Sternchen (*fett*, _kursiv_) – nur reinen Text und • Punkte
-• Produktnamen klar benennen, Preise direkt dahinter
+• Produktnamen oder Behandlungsnamen direkt nennen, ohne lange Beschreibung
+• Buchungslink nur einmal am Ende, nicht bei jedem Punkt wiederholen
+• Keine Einleitungssätze wie "Gerne helfe ich dir" oder "Das ist eine gute Frage"
 
-Ton: Warm, vertrauenswürdig, professionell. Kurze, klare Antworten.`;
+Ton: Warm, direkt, professionell. Weniger ist mehr.`;
 
   if (businessContext) {
     prompt += '\n\n--- ZUSÄTZLICHE GESCHÄFTSINFORMATIONEN (höchste Priorität) ---\n';

@@ -359,7 +359,13 @@ export class BrainService {
     // 4. Lead capture — handle contact awaiting state
     if (conversation?.awaitingContact && !conversation.leadCaptured) {
       const contact = extractContact(userMessage);
-      const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi)\b/i.test(userMessage);
+      const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how|offer)\b/i.test(userMessage);
+      // If user sent a new question instead of contact info, reset and let AI handle it normally
+      const isNewQuestion = !contact.phone && !contact.email && userMessage.trim().split(/\s+/).length > 3;
+      if (isNewQuestion) {
+        try { conversation.awaitingContact = false; await conversation.save(); } catch { /* ignore */ }
+        // fall through to normal AI processing below
+      } else
       if (contact.phone || contact.email) {
         try {
           await Lead.create({
@@ -428,7 +434,7 @@ export class BrainService {
     result.text = formatBullets(result.text);
 
     // 7. If service interest detected and no lead yet, append contact request
-    const isRefusal = /kann ich leider nicht|ausschliesslich für|can't help with|exclusively for|cannot help/i.test(result.text);
+    const isRefusal = /kann ich leider nicht|ausschliesslich für|can't help with|exclusively for|cannot help|can't assist|i'm sorry.*can't|leider nicht weiterhelfen/i.test(result.text);
     if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage) && !isRefusal) {
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
       result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;

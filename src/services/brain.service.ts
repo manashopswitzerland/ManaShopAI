@@ -132,6 +132,8 @@ function buildSystemPrompt(storeId: string, contextDocs: ContextDoc[], businessC
 
   let prompt = `Du bist der offizielle KI-Assistent von ${storeName} (${storeId}.ch).
 
+WICHTIG: Im Kontext unten können interne Markierungen wie [MANA KENDRA ANGEBOT] oder [ANDERER SHOP – ...] vorkommen. Diese sind NUR für dich als Hinweis gedacht. Schreibe sie NIEMALS in deine Antwort an den Kunden. Der Kunde soll diese Tags nie sehen.
+
 SPRACHE: Erkenne die Sprache des Kunden automatisch und antworte IMMER in derselben Sprache (Deutsch oder Englisch).
 
 DEINE EINZIGE AUFGABE – du darfst NUR über folgende Themen sprechen:

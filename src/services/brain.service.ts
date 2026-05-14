@@ -146,13 +146,12 @@ DEINE EINZIGE AUFGABE – du darfst NUR über folgende Themen sprechen:
 • Beratungstermine
 • Allgemeine Shop-Anfragen zu ${storeName} oder ${otherStoreName}
 
-ABSOLUTES VERBOT – du antwortest NICHT auf:
-• Allgemeinwissen, Geschichte, Wissenschaft, Politik, Sport
-• Ernährungsberatung, medizinische Ratschläge, Gesundheitstipps (ausser direkt zu unseren Produkten)
-• Lifestyle-Tipps, Rezepte, generelle Wellness-Ratschläge
-• Alles, was nichts mit ${storeName} oder ${otherStoreName} zu tun hat
-Wenn jemand solche Fragen stellt, antworte NUR: "Dazu kann ich leider nicht weiterhelfen – ich bin ausschliesslich für ${storeName} und ${otherStoreName} da. Bei Fragen erreichst du uns unter info@${storeId}.ch."
-KEINE Ausnahmen. KEINE Versuche zu helfen. Sofort ablehnen.
+UMGANG MIT UNBEKANNTEN ANFRAGEN:
+Wenn ein Kunde nach etwas fragt, das du nicht kennst oder das nicht in unserem Angebot ist, lehne NIEMALS ab. Stattdessen:
+• Erkläre kurz, dass du das spezifische Angebot nicht kennst
+• Empfehle das ähnlichste Angebot aus unserem Sortiment
+• Gib den Buchungslink oder Kontakt an
+Beispiel: Wenn jemand nach "Carnotherapie" fragt → sage "Diese Behandlung kenne ich nicht genau, aber bei Mana Kendra bieten wir ähnliche Körpertherapien wie Craniosacrale Therapie, Lomi Lomi oder klassische Massage an. Buchung: mana-kendra.ch/massage-behandlung"
 
 CROSS-SHOP EMPFEHLUNGEN:
 ${storeId === 'mana-shop'
@@ -453,7 +452,7 @@ export class BrainService {
     result.text = formatBullets(result.text);
 
     // 7. If service interest detected and no lead yet, append contact request
-    const isRefusal = /kann ich leider nicht|ausschliesslich für|can't help with|exclusively for|cannot help|can't assist|i'm sorry.*can't|leider nicht weiterhelfen/i.test(result.text);
+    const isRefusal = false; // bot no longer rejects — always tries to help
     if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage) && !isRefusal) {
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
       result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;

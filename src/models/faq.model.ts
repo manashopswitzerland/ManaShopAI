@@ -6,6 +6,7 @@ export interface IFaq extends Document {
   answer: string;
   tags: string[];
   language: Language;
+  storeId: string;
   createdAt: Date;
 }
 
@@ -20,6 +21,7 @@ const FaqSchema = new Schema<IFaq>(
       required: true,
       default: 'de',
     },
+    storeId: { type: String, default: 'mana-shop' },
   },
   {
     timestamps: true,

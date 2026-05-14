@@ -102,17 +102,19 @@ async function retrieveContext(query: string, storeId: string): Promise<ContextD
     const faqs = await Faq.find(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { $text: { $search: query } } as any,
-      { score: { $meta: 'textScore' }, question: 1, answer: 1 }
+      { score: { $meta: 'textScore' }, question: 1, answer: 1, storeId: 1 }
     )
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .sort({ score: { $meta: 'textScore' } } as any)
-      .limit(2)
+      .limit(4)
       .lean();
 
     for (const f of faqs) {
+      const isKendra = f.storeId === 'mana-kendra';
+      const prefix = isKendra ? '[MANA KENDRA ANGEBOT] ' : '';
       results.push({
         source: `faq:${String(f._id)}`,
-        text: `Frage: ${f.question}\nAntwort: ${f.answer}`,
+        text: `${prefix}Frage: ${f.question}\nAntwort: ${f.answer}`,
       });
     }
   } catch {
@@ -151,7 +153,10 @@ KEINE Ausnahmen. KEINE Versuche zu helfen. Sofort ablehnen.
 
 CROSS-SHOP EMPFEHLUNGEN:
 ${storeId === 'mana-shop'
-  ? `Mana Kendra (mana-kendra.ch) ist unser Schwester-Unternehmen für Massagen, Yoga und Therapien – kein Online-Shop, keine Produkte. Empfehle Mana Kendra NUR wenn der Kunde explizit nach Massagen, Yoga, Ayurveda-Behandlungen oder Therapien fragt. Empfehle NIEMALS Produkte aus Mana Kendra – dort gibt es keine Produkte zu kaufen.`
+  ? `Mana Kendra (mana-kendra.ch) ist unser Schwester-Unternehmen für Massagen, Yoga, Ayurveda und ganzheitliche Therapien – es verkauft KEINE Produkte online.
+Empfehle Mana Kendra aktiv, wenn der Kunde nach Massagen, Yoga, Entspannung, Stress, Therapien, Ayurveda, Behandlungen, Körperpflege oder Wohlbefinden fragt.
+Wenn du im Kontext unten Einträge siehst, die mit [MANA KENDRA ANGEBOT] markiert sind, nenne diese konkret mit Name und Buchungslink.
+Empfehle NIEMALS Produkte von Mana Kendra – dort gibt es keine Produkte zu kaufen, nur Behandlungen und Kurse.`
   : `Wenn du im Kontext Produkte siehst, die mit [ANDERER SHOP – mana-shop.ch] markiert sind, empfehle diese aktiv mit dem genauen Produktnamen und dem Hinweis "Du findest es bei unserem Mana Shop unter mana-shop.ch". Nenne IMMER den spezifischen Produktnamen – nie nur "besuche den anderen Shop".`
 }
 

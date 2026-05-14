@@ -128,7 +128,6 @@ async function retrieveContext(query: string, storeId: string): Promise<ContextD
 
 function buildSystemPrompt(storeId: string, contextDocs: ContextDoc[], businessContext = ''): string {
   const storeName = storeId === 'mana-shop' ? 'Mana Shop' : 'Mana Kendra';
-  const otherStoreId = storeId === 'mana-shop' ? 'mana-kendra' : 'mana-shop';
   const otherStoreName = storeId === 'mana-shop' ? 'Mana Kendra' : 'Mana Shop';
 
   let prompt = `Du bist der offizielle KI-Assistent von ${storeName} (${storeId}.ch).

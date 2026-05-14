@@ -146,13 +146,12 @@ DEINE EINZIGE AUFGABE – du darfst NUR über folgende Themen sprechen:
 • Beratungstermine
 • Allgemeine Shop-Anfragen zu ${storeName} oder ${otherStoreName}
 
-ABSOLUTES VERBOT – du antwortest NICHT auf:
-• Allgemeinwissen, Geschichte, Wissenschaft, Politik, Sport
-• Ernährungsberatung, medizinische Ratschläge, Gesundheitstipps (ausser direkt zu unseren Produkten)
-• Lifestyle-Tipps, Rezepte, generelle Wellness-Ratschläge
-• Alles, was nichts mit ${storeName} oder ${otherStoreName} zu tun hat
-Wenn jemand solche Fragen stellt, antworte NUR: "Dazu kann ich leider nicht weiterhelfen – ich bin ausschliesslich für ${storeName} und ${otherStoreName} da. Bei Fragen erreichst du uns unter info@${storeId}.ch."
-KEINE Ausnahmen. KEINE Versuche zu helfen. Sofort ablehnen.
+UMGANG MIT UNBEKANNTEN ANFRAGEN:
+Wenn ein Kunde nach etwas fragt, das du nicht kennst oder das nicht in unserem Angebot ist, lehne NIEMALS ab. Stattdessen:
+• Erkläre kurz, dass du das spezifische Angebot nicht kennst
+• Empfehle das ähnlichste Angebot aus unserem Sortiment
+• Gib den Buchungslink oder Kontakt an
+Beispiel: Wenn jemand nach "Carnotherapie" fragt → sage "Diese Behandlung kenne ich nicht genau, aber bei Mana Kendra bieten wir ähnliche Körpertherapien wie Craniosacrale Therapie, Lomi Lomi oder klassische Massage an. Buchung: mana-kendra.ch/massage-behandlung"
 
 CROSS-SHOP EMPFEHLUNGEN:
 ${storeId === 'mana-shop'
@@ -261,18 +260,24 @@ function extractContact(message: string): { phone?: string; email?: string } {
   };
 }
 
-const CONTACT_REQUEST_DE = '\n\nMöchtest du einen Rückruf oder weitere Infos? Hinterlasse uns einfach deine Telefonnummer oder E-Mail-Adresse — wir melden uns bei dir.';
-const CONTACT_REQUEST_EN = '\n\nWould you like a callback or more information? Just leave your phone number or email address and we\'ll get back to you.';
+const CONTACT_REQUEST_DE = '\n\nDarf ich kurz deine Telefonnummer oder E-Mail-Adresse haben, damit wir uns bei dir melden können?';
+const CONTACT_REQUEST_EN = '\n\nCan I get your phone number or email address so we can follow up with you?';
+
 function contactSavedReply(storeId: string, isEnglish: boolean): string {
   const bookingLink = storeId === 'mana-kendra'
     ? 'https://www.mana-kendra.ch/massage-behandlung'
     : 'https://kostenlose-beratung-buchen.youcanbook.me/';
   return isEnglish
-    ? `Thank you! We have saved your contact details and will get back to you shortly.\n\nIn the meantime, you can also book directly here: ${bookingLink}`
-    : `Danke! Wir haben deine Kontaktdaten gespeichert und melden uns bald bei dir.\n\nDu kannst auch direkt hier buchen: ${bookingLink}`;
+    ? `Perfect, thank you! We'll be in touch soon.\n\nYou can also book directly here: ${bookingLink}`
+    : `Super, danke! Wir melden uns bald bei dir.\n\nDu kannst auch direkt hier buchen: ${bookingLink}`;
 }
-const CONTACT_RETRY_DE = 'Ich konnte leider keine Telefonnummer oder E-Mail-Adresse erkennen. Bitte gib sie im Format +41 79 123 45 67 oder name@email.com an.';
-const CONTACT_RETRY_EN = 'I couldn\'t find a phone number or email address. Please provide it in the format +41 79 123 45 67 or name@email.com.';
+
+function detectNoContact(message: string): boolean {
+  return /no email|keine email|kein email|don'?t have.*email|hab(e)? keine|without email|nur telefon|only phone|no mail|kein mail/i.test(message);
+}
+
+const CONTACT_RETRY_DE = 'Kein Problem! Deine Telefonnummer reicht völlig aus. Wie lautet sie?';
+const CONTACT_RETRY_EN = 'No problem! Your phone number is enough. What is it?';
 
 // --- Response formatter ---
 // Ensures bullet points always appear on their own lines regardless of how the AI outputs them.
@@ -359,13 +364,20 @@ export class BrainService {
     // 4. Lead capture — handle contact awaiting state
     if (conversation?.awaitingContact && !conversation.leadCaptured) {
       const contact = extractContact(userMessage);
-      const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi)\b/i.test(userMessage);
-      if (contact.phone || contact.email) {
+      const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how|offer)\b/i.test(userMessage);
+
+      // User switched topic — reset and let AI answer normally
+      const isNewQuestion = !contact.phone && !contact.email && !detectNoContact(userMessage) && userMessage.trim().split(/\s+/).length > 4;
+      if (isNewQuestion) {
+        try { conversation.awaitingContact = false; await conversation.save(); } catch { /* ignore */ }
+        // fall through to normal AI processing below
+      } else if (contact.phone || contact.email) {
+        // Got at least one contact — save lead
         try {
           await Lead.create({
             phone: contact.phone ?? '',
             email: contact.email ?? '',
-            interest: conversation.messages.slice(-4).find(m => m.role === 'user')?.content ?? '',
+            interest: conversation.messages.slice(-6).find(m => m.role === 'user')?.content ?? '',
             sessionId,
             storeId,
             channel,
@@ -378,13 +390,25 @@ export class BrainService {
           await conversation.save();
           broadcastNotification(
             'New Lead',
-            `${contact.phone || contact.email} — interested in ${storeId === 'mana-kendra' ? 'Mana Kendra' : 'Mana Shop'} services`,
+            `${contact.phone || contact.email} — ${storeId === 'mana-kendra' ? 'Mana Kendra' : 'Mana Shop'}`,
             { screen: 'leads' }
           ).catch(() => {});
         } catch { /* DB unavailable */ }
         return { reply: contactSavedReply(storeId, isEnglish), tokensUsed: 0, contextSources: [] };
-      } else {
+      } else if (detectNoContact(userMessage)) {
+        // User said they don't have email — ask only for phone
         const reply = isEnglish ? CONTACT_RETRY_EN : CONTACT_RETRY_DE;
+        try {
+          conversation.messages.push({ role: 'user', content: userMessage, timestamp: new Date() });
+          conversation.messages.push({ role: 'assistant', content: reply, timestamp: new Date() });
+          await conversation.save();
+        } catch { /* DB unavailable */ }
+        return { reply, tokensUsed: 0, contextSources: [] };
+      } else {
+        // Short unrecognized reply — re-ask gently
+        const reply = isEnglish
+          ? 'No worries! Just your phone number or email is enough.'
+          : 'Kein Problem! Deine Telefonnummer oder E-Mail-Adresse reicht völlig.';
         try {
           conversation.messages.push({ role: 'user', content: userMessage, timestamp: new Date() });
           conversation.messages.push({ role: 'assistant', content: reply, timestamp: new Date() });
@@ -428,7 +452,7 @@ export class BrainService {
     result.text = formatBullets(result.text);
 
     // 7. If service interest detected and no lead yet, append contact request
-    const isRefusal = /kann ich leider nicht|ausschliesslich für|can't help with|exclusively for|cannot help/i.test(result.text);
+    const isRefusal = false; // bot no longer rejects — always tries to help
     if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage) && !isRefusal) {
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
       result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;

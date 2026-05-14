@@ -37,10 +37,10 @@ app.use('/api/knowledge',      knowledgeRoute);
 app.use('/api/notifications',  notificationsRoute);
 app.use('/api/leads',          leadsRoute);
 
-// index.html — never cache so widget JS updates reach users immediately
-app.get(['/', '/index.html'], (_req, res) => {
+// Never cache widget files so updates reach users immediately
+app.get(['/', '/index.html', '/widget.js'], (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+  next();
 });
 
 // Static files AFTER API routes

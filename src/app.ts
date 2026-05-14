@@ -10,6 +10,7 @@ import shopifyAuthRoute from './routes/shopify-auth.route';
 import dashboardRoute from './routes/dashboard.route';
 import knowledgeRoute from './routes/knowledge.route';
 import notificationsRoute from './routes/notifications.route';
+import leadsRoute from './routes/leads.route';
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/auth/shopify', shopifyAuthRoute);
 app.use('/api/dashboard',      dashboardRoute);
 app.use('/api/knowledge',      knowledgeRoute);
 app.use('/api/notifications',  notificationsRoute);
+app.use('/api/leads',          leadsRoute);
 
 // Static files AFTER API routes
 app.use(express.static(path.join(__dirname, '..', 'public')));

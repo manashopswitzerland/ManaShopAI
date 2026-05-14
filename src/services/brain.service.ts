@@ -4,6 +4,8 @@ import { Product } from '../models/product.model';
 import { Faq } from '../models/faq.model';
 import { Conversation } from '../models/conversation.model';
 import { BusinessContext } from '../models/business-context.model';
+import { Lead } from '../models/lead.model';
+import { broadcastNotification } from './notifications';
 import type {
   BrainInput,
   BrainOutput,
@@ -235,6 +237,37 @@ const HANDOFF_REPLY =
 const HUMAN_WAIT_REPLY =
   "A human support agent will respond to you shortly. Please hold on.\n\nEin menschlicher Support-Mitarbeiter wird sich in Kürze bei Ihnen melden. Bitte haben Sie Geduld.";
 
+// --- Lead capture ---
+
+const SERVICE_KEYWORDS = [
+  'massage', 'therapie', 'therapy', 'yoga', 'behandlung', 'treatment', 'buchen', 'book',
+  'termin', 'appointment', 'burnout', 'stress', 'entspannung', 'relaxation', 'ayurveda',
+  'craniosacral', 'hypno', 'reiki', 'meditation', 'qi gong', 'coaching', 'beratung',
+  'lomi', 'schwangerschaft', 'pregnancy', 'trauma', 'kinesiologie', 'klang', 'sound',
+  'rückbildung', 'beckenboden', 'ernährung', 'nutrition', 'gesundheit', 'health',
+];
+
+function detectServiceInterest(message: string): boolean {
+  const lower = message.toLowerCase();
+  return SERVICE_KEYWORDS.some((k) => lower.includes(k));
+}
+
+function extractContact(message: string): { phone?: string; email?: string } {
+  const emailMatch = message.match(/[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}/);
+  const phoneMatch = message.match(/(\+?\d[\d\s\-().]{6,}\d)/);
+  return {
+    email: emailMatch?.[0],
+    phone: phoneMatch?.[0]?.replace(/\s+/g, ' ').trim(),
+  };
+}
+
+const CONTACT_REQUEST_DE = '\n\nMöchtest du einen Rückruf oder weitere Infos? Hinterlasse uns einfach deine Telefonnummer oder E-Mail-Adresse — wir melden uns bei dir.';
+const CONTACT_REQUEST_EN = '\n\nWould you like a callback or more information? Just leave your phone number or email address and we\'ll get back to you.';
+const CONTACT_SAVED_DE = 'Danke! Wir haben deine Kontaktdaten gespeichert und melden uns bald bei dir.';
+const CONTACT_SAVED_EN = 'Thank you! We have saved your contact details and will get back to you shortly.';
+const CONTACT_RETRY_DE = 'Ich konnte leider keine Telefonnummer oder E-Mail-Adresse erkennen. Bitte gib sie im Format +41 79 123 45 67 oder name@email.com an.';
+const CONTACT_RETRY_EN = 'I couldn\'t find a phone number or email address. Please provide it in the format +41 79 123 45 67 or name@email.com.';
+
 // --- Response formatter ---
 // Ensures bullet points always appear on their own lines regardless of how the AI outputs them.
 function formatBullets(text: string): string {
@@ -317,7 +350,45 @@ export class BrainService {
       };
     }
 
-    // 4. Retrieve relevant context from products + FAQs
+    // 4. Lead capture — handle contact awaiting state
+    if (conversation?.awaitingContact && !conversation.leadCaptured) {
+      const contact = extractContact(userMessage);
+      const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi)\b/i.test(userMessage);
+      if (contact.phone || contact.email) {
+        try {
+          await Lead.create({
+            phone: contact.phone ?? '',
+            email: contact.email ?? '',
+            interest: conversation.messages.slice(-4).find(m => m.role === 'user')?.content ?? '',
+            sessionId,
+            storeId,
+            channel,
+          });
+          conversation.awaitingContact = false;
+          conversation.leadCaptured = true;
+          const reply = isEnglish ? CONTACT_SAVED_EN : CONTACT_SAVED_DE;
+          conversation.messages.push({ role: 'user', content: userMessage, timestamp: new Date() });
+          conversation.messages.push({ role: 'assistant', content: reply, timestamp: new Date() });
+          await conversation.save();
+          broadcastNotification(
+            'New Lead',
+            `${contact.phone || contact.email} — interested in ${storeId === 'mana-kendra' ? 'Mana Kendra' : 'Mana Shop'} services`,
+            { screen: 'leads' }
+          ).catch(() => {});
+        } catch { /* DB unavailable */ }
+        return { reply: isEnglish ? CONTACT_SAVED_EN : CONTACT_SAVED_DE, tokensUsed: 0, contextSources: [] };
+      } else {
+        const reply = isEnglish ? CONTACT_RETRY_EN : CONTACT_RETRY_DE;
+        try {
+          conversation.messages.push({ role: 'user', content: userMessage, timestamp: new Date() });
+          conversation.messages.push({ role: 'assistant', content: reply, timestamp: new Date() });
+          await conversation.save();
+        } catch { /* DB unavailable */ }
+        return { reply, tokensUsed: 0, contextSources: [] };
+      }
+    }
+
+    // 4b. Retrieve relevant context from products + FAQs
     const contextDocs = await retrieveContext(userMessage, storeId);
     const contextSources = contextDocs.map((d) => d.source);
 
@@ -350,7 +421,14 @@ export class BrainService {
 
     result.text = formatBullets(result.text);
 
-    // 7. Persist new user + assistant messages — graceful if DB is down
+    // 7. If service interest detected and no lead yet, append contact request
+    if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage)) {
+      const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
+      result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;
+      conversation.awaitingContact = true;
+    }
+
+    // 8. Persist new user + assistant messages — graceful if DB is down
     if (conversation) {
       try {
         const now = new Date();

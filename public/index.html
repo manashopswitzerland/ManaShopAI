@@ -1137,11 +1137,11 @@ function appendMessage(role, text, contextSources = []) {
       </div>`;
   }
 
-  // white-space:pre-wrap on .bubble handles \n natively — no <br/> needed
   const safeText = text
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/ • /g, '\n• ')
-    .replace(/([^\n])•/g, '$1\n•');
+    .replace(/ • /g, '<br>• ')
+    .replace(/([^>])•/g, '$1<br>• ')
+    .replace(/\n/g, '<br>');
 
   row.innerHTML = `
     ${avatarHtml}

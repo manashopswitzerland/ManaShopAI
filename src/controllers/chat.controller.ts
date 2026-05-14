@@ -30,8 +30,15 @@ export async function handleWebChat(
       requestHuman: body.requestHuman,
     });
 
+    // Pre-format for web: convert bullet lines to HTML so widget renders correctly
+    const webReply = output.reply
+      .replace(/ • /g, '\n• ')
+      .split('\n')
+      .map(line => line.trimEnd())
+      .join('<br>');
+
     res.json({
-      reply: output.reply,
+      reply: webReply,
       sessionId: body.sessionId,
       tokensUsed: output.tokensUsed,
       contextSources: output.contextSources,

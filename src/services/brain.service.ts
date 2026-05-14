@@ -452,9 +452,10 @@ export class BrainService {
     result.text = formatBullets(result.text);
 
     // 7. If service interest detected and no lead yet, append contact request
-    const isRefusal = false; // bot no longer rejects — always tries to help
-    if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage) && !isRefusal) {
+    if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage)) {
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
+      // Remove URLs from the answer — they'll appear in the thank-you after contact is saved
+      result.text = result.text.replace(/https?:\/\/\S+/g, '').replace(/\s{2,}/g, ' ').trimEnd();
       result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;
       conversation.awaitingContact = true;
     }

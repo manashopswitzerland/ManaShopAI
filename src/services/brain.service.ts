@@ -261,18 +261,24 @@ function extractContact(message: string): { phone?: string; email?: string } {
   };
 }
 
-const CONTACT_REQUEST_DE = '\n\nMöchtest du einen Rückruf oder weitere Infos? Hinterlasse uns einfach deine Telefonnummer oder E-Mail-Adresse — wir melden uns bei dir.';
-const CONTACT_REQUEST_EN = '\n\nWould you like a callback or more information? Just leave your phone number or email address and we\'ll get back to you.';
+const CONTACT_REQUEST_DE = '\n\nDarf ich kurz deine Telefonnummer oder E-Mail-Adresse haben, damit wir uns bei dir melden können?';
+const CONTACT_REQUEST_EN = '\n\nCan I get your phone number or email address so we can follow up with you?';
+
 function contactSavedReply(storeId: string, isEnglish: boolean): string {
   const bookingLink = storeId === 'mana-kendra'
     ? 'https://www.mana-kendra.ch/massage-behandlung'
     : 'https://kostenlose-beratung-buchen.youcanbook.me/';
   return isEnglish
-    ? `Thank you! We have saved your contact details and will get back to you shortly.\n\nIn the meantime, you can also book directly here: ${bookingLink}`
-    : `Danke! Wir haben deine Kontaktdaten gespeichert und melden uns bald bei dir.\n\nDu kannst auch direkt hier buchen: ${bookingLink}`;
+    ? `Perfect, thank you! We'll be in touch soon.\n\nYou can also book directly here: ${bookingLink}`
+    : `Super, danke! Wir melden uns bald bei dir.\n\nDu kannst auch direkt hier buchen: ${bookingLink}`;
 }
-const CONTACT_RETRY_DE = 'Ich konnte leider keine Telefonnummer oder E-Mail-Adresse erkennen. Bitte gib sie im Format +41 79 123 45 67 oder name@email.com an.';
-const CONTACT_RETRY_EN = 'I couldn\'t find a phone number or email address. Please provide it in the format +41 79 123 45 67 or name@email.com.';
+
+function detectNoContact(message: string): boolean {
+  return /no email|keine email|kein email|don'?t have.*email|hab(e)? keine|without email|nur telefon|only phone|no mail|kein mail/i.test(message);
+}
+
+const CONTACT_RETRY_DE = 'Kein Problem! Deine Telefonnummer reicht völlig aus. Wie lautet sie?';
+const CONTACT_RETRY_EN = 'No problem! Your phone number is enough. What is it?';
 
 // --- Response formatter ---
 // Ensures bullet points always appear on their own lines regardless of how the AI outputs them.
@@ -360,18 +366,19 @@ export class BrainService {
     if (conversation?.awaitingContact && !conversation.leadCaptured) {
       const contact = extractContact(userMessage);
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how|offer)\b/i.test(userMessage);
-      // If user sent a new question instead of contact info, reset and let AI handle it normally
-      const isNewQuestion = !contact.phone && !contact.email && userMessage.trim().split(/\s+/).length > 3;
+
+      // User switched topic — reset and let AI answer normally
+      const isNewQuestion = !contact.phone && !contact.email && !detectNoContact(userMessage) && userMessage.trim().split(/\s+/).length > 4;
       if (isNewQuestion) {
         try { conversation.awaitingContact = false; await conversation.save(); } catch { /* ignore */ }
         // fall through to normal AI processing below
-      } else
-      if (contact.phone || contact.email) {
+      } else if (contact.phone || contact.email) {
+        // Got at least one contact — save lead
         try {
           await Lead.create({
             phone: contact.phone ?? '',
             email: contact.email ?? '',
-            interest: conversation.messages.slice(-4).find(m => m.role === 'user')?.content ?? '',
+            interest: conversation.messages.slice(-6).find(m => m.role === 'user')?.content ?? '',
             sessionId,
             storeId,
             channel,
@@ -384,13 +391,25 @@ export class BrainService {
           await conversation.save();
           broadcastNotification(
             'New Lead',
-            `${contact.phone || contact.email} — interested in ${storeId === 'mana-kendra' ? 'Mana Kendra' : 'Mana Shop'} services`,
+            `${contact.phone || contact.email} — ${storeId === 'mana-kendra' ? 'Mana Kendra' : 'Mana Shop'}`,
             { screen: 'leads' }
           ).catch(() => {});
         } catch { /* DB unavailable */ }
         return { reply: contactSavedReply(storeId, isEnglish), tokensUsed: 0, contextSources: [] };
-      } else {
+      } else if (detectNoContact(userMessage)) {
+        // User said they don't have email — ask only for phone
         const reply = isEnglish ? CONTACT_RETRY_EN : CONTACT_RETRY_DE;
+        try {
+          conversation.messages.push({ role: 'user', content: userMessage, timestamp: new Date() });
+          conversation.messages.push({ role: 'assistant', content: reply, timestamp: new Date() });
+          await conversation.save();
+        } catch { /* DB unavailable */ }
+        return { reply, tokensUsed: 0, contextSources: [] };
+      } else {
+        // Short unrecognized reply — re-ask gently
+        const reply = isEnglish
+          ? 'No worries! Just your phone number or email is enough.'
+          : 'Kein Problem! Deine Telefonnummer oder E-Mail-Adresse reicht völlig.';
         try {
           conversation.messages.push({ role: 'user', content: userMessage, timestamp: new Date() });
           conversation.messages.push({ role: 'assistant', content: reply, timestamp: new Date() });

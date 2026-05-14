@@ -37,6 +37,12 @@ app.use('/api/knowledge',      knowledgeRoute);
 app.use('/api/notifications',  notificationsRoute);
 app.use('/api/leads',          leadsRoute);
 
+// index.html — never cache so widget JS updates reach users immediately
+app.get(['/', '/index.html'], (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
 // Static files AFTER API routes
 app.use(express.static(path.join(__dirname, '..', 'public')));
 

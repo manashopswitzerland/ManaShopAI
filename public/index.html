@@ -1137,8 +1137,12 @@ function appendMessage(role, text, contextSources = []) {
       </div>`;
   }
 
-  // Server pre-formats <br> for web — only escape & to avoid double-escaping
-  const safeText = text.replace(/&(?!amp;|lt;|gt;|quot;)/g, '&amp;');
+  const safeText = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/ • /g, '\n• ')
+    .replace(/\n/g, '<br>');
 
   row.innerHTML = `
     ${avatarHtml}

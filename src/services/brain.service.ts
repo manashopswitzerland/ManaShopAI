@@ -263,8 +263,14 @@ function extractContact(message: string): { phone?: string; email?: string } {
 
 const CONTACT_REQUEST_DE = '\n\nMöchtest du einen Rückruf oder weitere Infos? Hinterlasse uns einfach deine Telefonnummer oder E-Mail-Adresse — wir melden uns bei dir.';
 const CONTACT_REQUEST_EN = '\n\nWould you like a callback or more information? Just leave your phone number or email address and we\'ll get back to you.';
-const CONTACT_SAVED_DE = 'Danke! Wir haben deine Kontaktdaten gespeichert und melden uns bald bei dir.';
-const CONTACT_SAVED_EN = 'Thank you! We have saved your contact details and will get back to you shortly.';
+function contactSavedReply(storeId: string, isEnglish: boolean): string {
+  const bookingLink = storeId === 'mana-kendra'
+    ? 'https://www.mana-kendra.ch/massage-behandlung'
+    : 'https://kostenlose-beratung-buchen.youcanbook.me/';
+  return isEnglish
+    ? `Thank you! We have saved your contact details and will get back to you shortly.\n\nIn the meantime, you can also book directly here: ${bookingLink}`
+    : `Danke! Wir haben deine Kontaktdaten gespeichert und melden uns bald bei dir.\n\nDu kannst auch direkt hier buchen: ${bookingLink}`;
+}
 const CONTACT_RETRY_DE = 'Ich konnte leider keine Telefonnummer oder E-Mail-Adresse erkennen. Bitte gib sie im Format +41 79 123 45 67 oder name@email.com an.';
 const CONTACT_RETRY_EN = 'I couldn\'t find a phone number or email address. Please provide it in the format +41 79 123 45 67 or name@email.com.';
 
@@ -366,7 +372,7 @@ export class BrainService {
           });
           conversation.awaitingContact = false;
           conversation.leadCaptured = true;
-          const reply = isEnglish ? CONTACT_SAVED_EN : CONTACT_SAVED_DE;
+          const reply = contactSavedReply(storeId, isEnglish);
           conversation.messages.push({ role: 'user', content: userMessage, timestamp: new Date() });
           conversation.messages.push({ role: 'assistant', content: reply, timestamp: new Date() });
           await conversation.save();
@@ -376,7 +382,7 @@ export class BrainService {
             { screen: 'leads' }
           ).catch(() => {});
         } catch { /* DB unavailable */ }
-        return { reply: isEnglish ? CONTACT_SAVED_EN : CONTACT_SAVED_DE, tokensUsed: 0, contextSources: [] };
+        return { reply: contactSavedReply(storeId, isEnglish), tokensUsed: 0, contextSources: [] };
       } else {
         const reply = isEnglish ? CONTACT_RETRY_EN : CONTACT_RETRY_DE;
         try {

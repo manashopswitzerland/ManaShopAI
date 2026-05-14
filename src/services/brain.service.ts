@@ -235,6 +235,20 @@ const HANDOFF_REPLY =
 const HUMAN_WAIT_REPLY =
   "A human support agent will respond to you shortly. Please hold on.\n\nEin menschlicher Support-Mitarbeiter wird sich in Kürze bei Ihnen melden. Bitte haben Sie Geduld.";
 
+// --- Response formatter ---
+// Ensures bullet points always appear on their own lines regardless of how the AI outputs them.
+function formatBullets(text: string): string {
+  // Split inline bullets: "text • item • item" → proper newlines
+  let out = text
+    .replace(/ • /g, '\n• ')   // space-bullet-space → newline-bullet
+    .replace(/([^\n])•/g, '$1\n•'); // bullet not preceded by newline → add newline
+
+  // Collapse 3+ consecutive blank lines to 2
+  out = out.replace(/\n{3,}/g, '\n\n');
+
+  return out.trim();
+}
+
 // --- BrainService ---
 
 export class BrainService {
@@ -333,6 +347,8 @@ export class BrainService {
       model: env.OPENAI_MODEL,
       temperature: 0.4,
     });
+
+    result.text = formatBullets(result.text);
 
     // 7. Persist new user + assistant messages — graceful if DB is down
     if (conversation) {

@@ -428,7 +428,8 @@ export class BrainService {
     result.text = formatBullets(result.text);
 
     // 7. If service interest detected and no lead yet, append contact request
-    if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage)) {
+    const isRefusal = /kann ich leider nicht|ausschliesslich für|can't help with|exclusively for|cannot help/i.test(result.text);
+    if (conversation && !conversation.leadCaptured && !conversation.awaitingContact && detectServiceInterest(userMessage) && !isRefusal) {
       const isEnglish = /\b(i|my|me|please|yes|no|thank|hello|hi|what|do|you|can|how)\b/i.test(userMessage);
       result.text += isEnglish ? CONTACT_REQUEST_EN : CONTACT_REQUEST_DE;
       conversation.awaitingContact = true;

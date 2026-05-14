@@ -13,8 +13,8 @@ export async function listFaqs(_req: Request, res: Response, next: NextFunction)
 
 export async function createFaq(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { question, answer, tags, language } = req.body as {
-      question: string; answer: string; tags?: string[]; language?: string;
+    const { question, answer, tags, language, storeId } = req.body as {
+      question: string; answer: string; tags?: string[]; language?: string; storeId?: string;
     };
     if (!question?.trim() || !answer?.trim()) {
       res.status(400).json({ error: 'question and answer are required' });
@@ -25,6 +25,7 @@ export async function createFaq(req: Request, res: Response, next: NextFunction)
       answer: answer.trim(),
       tags: Array.isArray(tags) ? tags : [],
       language: language === 'en' ? 'en' : 'de',
+      storeId: storeId === 'mana-kendra' ? 'mana-kendra' : 'mana-shop',
     });
     await faq.save();
     res.json({ faq });
@@ -33,8 +34,8 @@ export async function createFaq(req: Request, res: Response, next: NextFunction)
 
 export async function updateFaq(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { question, answer, tags, language } = req.body as {
-      question: string; answer: string; tags?: string[]; language?: string;
+    const { question, answer, tags, language, storeId } = req.body as {
+      question: string; answer: string; tags?: string[]; language?: string; storeId?: string;
     };
     if (!question?.trim() || !answer?.trim()) {
       res.status(400).json({ error: 'question and answer are required' });
@@ -47,6 +48,7 @@ export async function updateFaq(req: Request, res: Response, next: NextFunction)
         answer: answer.trim(),
         tags: Array.isArray(tags) ? tags : [],
         language: language === 'en' ? 'en' : 'de',
+        storeId: storeId === 'mana-kendra' ? 'mana-kendra' : 'mana-shop',
       },
       { new: true }
     );

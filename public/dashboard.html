@@ -382,6 +382,15 @@
             <div class="form-row"><div class="form-label">Answer</div><div class="field"><textarea id="faq-a" placeholder="Write a clear, plain-text answer…"></textarea></div></div>
             <div class="form-row"><div class="form-label">Tags (comma-separated)</div><div class="field"><input type="text" id="faq-tags" placeholder="e.g. shipping, delivery" /></div></div>
             <div class="form-row">
+              <div class="form-label">Belongs to</div>
+              <div class="field">
+                <select id="faq-store" style="-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236b7280' d='M5 7L1 3h8z'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;">
+                  <option value="mana-shop">Mana Shop (products, supplements…)</option>
+                  <option value="mana-kendra">Mana Kendra (therapies, yoga, massages…)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
               <div class="form-label">Language</div>
               <div class="field">
                 <select id="faq-lang" style="-webkit-appearance:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236b7280' d='M5 7L1 3h8z'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;">
@@ -722,7 +731,7 @@ function renderFaqList() {
     <div class="faq-card${f._id === selectedFaqId ? ' selected' : ''}" onclick="openFaq('${f._id}')">
       <div class="faq-q">${esc(f.question)}</div>
       <div class="faq-a">${esc(f.answer)}</div>
-      <div class="faq-footer"><span class="badge ${f.language}">${f.language === 'en' ? '🇬🇧 EN' : '🇩🇪 DE'}</span>${(f.tags || []).slice(0, 3).map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}</div>
+      <div class="faq-footer"><span class="badge ${f.language}">${f.language === 'en' ? '🇬🇧 EN' : '🇩🇪 DE'}</span><span class="badge" style="background:${f.storeId === 'mana-kendra' ? '#fef3c7' : '#ede9fe'};color:${f.storeId === 'mana-kendra' ? '#92400e' : '#5b21b6'}">${f.storeId === 'mana-kendra' ? 'Mana Kendra' : 'Mana Shop'}</span>${(f.tags || []).slice(0, 2).map(t => `<span class="tag-pill">${esc(t)}</span>`).join('')}</div>
     </div>`).join('');
 }
 function openFaq(id) {
@@ -733,7 +742,8 @@ function openFaq(id) {
   document.getElementById('faq-q').value    = f.question;
   document.getElementById('faq-a').value    = f.answer;
   document.getElementById('faq-tags').value = (f.tags || []).join(', ');
-  document.getElementById('faq-lang').value = f.language || 'de';
+  document.getElementById('faq-lang').value  = f.language || 'de';
+  document.getElementById('faq-store').value = f.storeId || 'mana-shop';
   document.getElementById('faq-detail-title').textContent = 'Edit FAQ';
   document.getElementById('faq-delete-btn').style.display = 'inline-flex';
   document.getElementById('faq-detail').style.display     = 'flex';
@@ -746,7 +756,8 @@ function newFaq() {
   document.getElementById('faq-q').value    = '';
   document.getElementById('faq-a').value    = '';
   document.getElementById('faq-tags').value = '';
-  document.getElementById('faq-lang').value = 'de';
+  document.getElementById('faq-lang').value  = 'de';
+  document.getElementById('faq-store').value = 'mana-shop';
   document.getElementById('faq-detail-title').textContent = 'New FAQ';
   document.getElementById('faq-delete-btn').style.display = 'none';
   document.getElementById('faq-detail').style.display     = 'flex';
@@ -765,12 +776,13 @@ async function saveFaq() {
   const id = document.getElementById('faq-id').value;
   const q  = document.getElementById('faq-q').value.trim();
   const a  = document.getElementById('faq-a').value.trim();
-  const tags = document.getElementById('faq-tags').value.split(',').map(t => t.trim()).filter(Boolean);
-  const lang = document.getElementById('faq-lang').value;
+  const tags    = document.getElementById('faq-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const lang    = document.getElementById('faq-lang').value;
+  const storeId = document.getElementById('faq-store').value;
   if (!q || !a) { toast('Question and answer are required.', 'error'); return; }
   try {
-    if (id) { await api('PUT', `/api/knowledge/faqs/${id}`, { question: q, answer: a, tags, language: lang }); toast('FAQ updated.', 'success'); }
-    else     { await api('POST', '/api/knowledge/faqs', { question: q, answer: a, tags, language: lang }); toast('FAQ created.', 'success'); }
+    if (id) { await api('PUT', `/api/knowledge/faqs/${id}`, { question: q, answer: a, tags, language: lang, storeId }); toast('FAQ updated.', 'success'); }
+    else     { await api('POST', '/api/knowledge/faqs', { question: q, answer: a, tags, language: lang, storeId }); toast('FAQ created.', 'success'); }
     await fetchFaqs(); closeFaqDetail();
   } catch (e) { toast(e.message, 'error'); }
 }

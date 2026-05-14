@@ -5,10 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Mana Agent Hub',
   webDir: 'public',
   server: {
-    // Live-reload during development — APK loads directly from your running server
-    url: 'http://192.168.18.158:4000/dashboard.html',
-    cleartext: true,
-    androidScheme: 'http',
+    url: 'https://manashopai.onrender.com/dashboard.html',
+    androidScheme: 'https',
   },
   plugins: {
     PushNotifications: {

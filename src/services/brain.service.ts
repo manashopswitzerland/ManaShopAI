@@ -72,44 +72,49 @@ async function retrieveContext(query: string, storeId: string): Promise<ContextD
     // Text index may not exist yet; skip product context gracefully
   }
 
-  // Cross-store products (top 2 from the other store for cross-recommendations)
-  const otherStoreId = storeId === 'mana-shop' ? 'mana-kendra' : 'mana-shop';
-  try {
-    const crossProducts = await Product.find(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { $text: { $search: query }, storeId: otherStoreId } as any,
-      { score: { $meta: 'textScore' }, title: 1, plainDescription: 1, price: 1, vendor: 1 }
-    )
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .sort({ score: { $meta: 'textScore' } } as any)
-      .limit(2)
-      .lean();
+  // Cross-store products: only pull from mana-shop when serving mana-kendra.
+  // mana-kendra sells services (massages, yoga, therapies), not products —
+  // so never recommend mana-kendra products as cross-store suggestions.
+  if (storeId === 'mana-kendra') {
+    try {
+      const crossProducts = await Product.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { $text: { $search: query }, storeId: 'mana-shop' } as any,
+        { score: { $meta: 'textScore' }, title: 1, plainDescription: 1, price: 1, vendor: 1 }
+      )
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .sort({ score: { $meta: 'textScore' } } as any)
+        .limit(2)
+        .lean();
 
-    for (const p of crossProducts) {
-      results.push({
-        source: `cross-product:${otherStoreId}:${String(p._id)}`,
-        text: `[ANDERER SHOP – ${otherStoreId}.ch] Produkt: ${p.title} | Preis: ${p.price} CHF\n${p.plainDescription}`,
-      });
+      for (const p of crossProducts) {
+        results.push({
+          source: `cross-product:mana-shop:${String(p._id)}`,
+          text: `[ANDERER SHOP – mana-shop.ch] Produkt: ${p.title} | Preis: ${p.price} CHF\n${p.plainDescription}`,
+        });
+      }
+    } catch {
+      // Cross-store lookup failed; continue without it
     }
-  } catch {
-    // Cross-store lookup failed; continue without it
   }
 
   try {
     const faqs = await Faq.find(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { $text: { $search: query } } as any,
-      { score: { $meta: 'textScore' }, question: 1, answer: 1 }
+      { score: { $meta: 'textScore' }, question: 1, answer: 1, storeId: 1 }
     )
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .sort({ score: { $meta: 'textScore' } } as any)
-      .limit(2)
+      .limit(4)
       .lean();
 
     for (const f of faqs) {
+      const isKendra = f.storeId === 'mana-kendra';
+      const prefix = isKendra ? '[MANA KENDRA ANGEBOT] ' : '';
       results.push({
         source: `faq:${String(f._id)}`,
-        text: `Frage: ${f.question}\nAntwort: ${f.answer}`,
+        text: `${prefix}Frage: ${f.question}\nAntwort: ${f.answer}`,
       });
     }
   } catch {
@@ -146,11 +151,14 @@ ABSOLUTES VERBOT – du antwortest NICHT auf:
 Wenn jemand solche Fragen stellt, antworte NUR: "Dazu kann ich leider nicht weiterhelfen – ich bin ausschliesslich für ${storeName} und ${otherStoreName} da. Bei Fragen erreichst du uns unter info@${storeId}.ch."
 KEINE Ausnahmen. KEINE Versuche zu helfen. Sofort ablehnen.
 
-CROSS-SHOP EMPFEHLUNGEN – sehr wichtig:
-Du kennst beide Shops: ${storeName} (${storeId}.ch) und ${otherStoreName} (${otherStoreId}.ch).
-Wenn du im Kontext unten Produkte oder Behandlungen siehst, die mit [ANDERER SHOP – ${otherStoreId}.ch] markiert sind, empfehle diese aktiv mit dem genauen Produktnamen und dem Hinweis auf den anderen Shop.
-Beispiel: "Das Produkt [Name] findest du bei unserem ${otherStoreName} unter ${otherStoreId}.ch"
-Nenne IMMER den spezifischen Produktnamen – nie nur "besuche den anderen Shop".
+CROSS-SHOP EMPFEHLUNGEN:
+${storeId === 'mana-shop'
+  ? `Mana Kendra (mana-kendra.ch) ist unser Schwester-Unternehmen für Massagen, Yoga, Ayurveda und ganzheitliche Therapien – es verkauft KEINE Produkte online.
+Empfehle Mana Kendra aktiv, wenn der Kunde nach Massagen, Yoga, Entspannung, Stress, Therapien, Ayurveda, Behandlungen, Körperpflege oder Wohlbefinden fragt.
+Wenn du im Kontext unten Einträge siehst, die mit [MANA KENDRA ANGEBOT] markiert sind, nenne diese konkret mit Name und Buchungslink.
+Empfehle NIEMALS Produkte von Mana Kendra – dort gibt es keine Produkte zu kaufen, nur Behandlungen und Kurse.`
+  : `Wenn du im Kontext Produkte siehst, die mit [ANDERER SHOP – mana-shop.ch] markiert sind, empfehle diese aktiv mit dem genauen Produktnamen und dem Hinweis "Du findest es bei unserem Mana Shop unter mana-shop.ch". Nenne IMMER den spezifischen Produktnamen – nie nur "besuche den anderen Shop".`
+}
 
 BERATUNGSTERMIN-BUCHUNG:
 Wenn der Kunde nach Beratung, Coaching, Therapie fragt oder sich gestresst/überfordert fühlt:

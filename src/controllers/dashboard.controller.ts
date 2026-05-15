@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import twilio from 'twilio';
 import { Conversation } from '../models/conversation.model';
 import { sendEmail } from '../services/email.service';
+import { sendFacebookMessage } from '../services/facebook.service';
 import { env } from '../config/env';
 import { broadcastNotification } from '../services/notifications';
 
@@ -137,6 +138,11 @@ export async function replyToConversation(
           text: message.trim(),
           isHumanReply: true,
         });
+        dispatched = true;
+      } else if (conversation.channel === 'facebook' || conversation.channel === 'instagram') {
+        const recipientId = conversation.customerContact
+          || conversation.sessionId.replace(/^(facebook|instagram):/, '');
+        await sendFacebookMessage(recipientId, message.trim());
         dispatched = true;
       } else {
         // web/Shopify — stored in DB, widget polls via GET /chat/web/messages/:sessionId

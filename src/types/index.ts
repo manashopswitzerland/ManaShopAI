@@ -1,4 +1,4 @@
-export type Channel = 'whatsapp' | 'web' | 'email';
+export type Channel = 'whatsapp' | 'web' | 'email' | 'facebook' | 'instagram';
 export type StoreId = 'mana-shop' | 'mana-kendra';
 export type Language = 'de' | 'en';
 export type MessageRole = 'user' | 'assistant';

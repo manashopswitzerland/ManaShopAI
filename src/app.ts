@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { errorHandler } from './middlewares/errorHandler';
 import whatsappRoute from './routes/whatsapp.route';
+import facebookRoute from './routes/facebook.route';
 import chatRoute from './routes/chat.route';
 import emailRoute from './routes/email.route';
 import syncRoute from './routes/sync.route';
@@ -28,6 +29,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/webhooks/whatsapp', whatsappRoute);
+app.use('/webhooks/facebook', facebookRoute);
 app.use('/chat/web', chatRoute);
 app.use('/webhooks/email', emailRoute);
 app.use('/admin/sync-shopify', syncRoute);

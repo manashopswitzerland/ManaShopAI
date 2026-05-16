@@ -142,7 +142,7 @@ export async function replyToConversation(
       } else if (conversation.channel === 'facebook' || conversation.channel === 'instagram') {
         const recipientId = conversation.customerContact
           || conversation.sessionId.replace(/^(facebook|instagram):/, '');
-        await sendFacebookMessage(recipientId, message.trim());
+        await sendFacebookMessage(recipientId, message.trim(), conversation.channel);
         dispatched = true;
       } else {
         // web/Shopify — stored in DB, widget polls via GET /chat/web/messages/:sessionId

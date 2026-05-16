@@ -77,11 +77,11 @@ async function processEvent(event: MessagingEntry, object: string): Promise<void
       customerContact: senderId,
     });
 
-    await sendFacebookMessage(senderId, output.reply);
+    await sendFacebookMessage(senderId, output.reply, channel);
   } catch (err) {
     console.error(`[Facebook] Error processing ${channel} message from ${senderId}:`, err);
     const fallback =
       'Es tut mir leid, ich konnte deine Anfrage nicht verarbeiten. Bitte versuche es später erneut oder schreib uns an info@mana-shop.ch';
-    try { await sendFacebookMessage(senderId, fallback); } catch { /* ignore send failure */ }
+    try { await sendFacebookMessage(senderId, fallback, channel); } catch { /* ignore send failure */ }
   }
 }

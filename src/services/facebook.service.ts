@@ -14,10 +14,7 @@ export async function sendFacebookMessage(recipientId: string, text: string, cha
     throw new Error('No access token configured for channel: ' + channel);
   }
 
-  // Instagram requires explicit Page ID; Facebook works with /me
-  const endpoint = channel === 'instagram' ? FACEBOOK_PAGE_ID : 'me';
-
-  const res = await fetch(`${GRAPH_API}/${endpoint}/messages?access_token=${token}`, {
+  const res = await fetch(`${GRAPH_API}/me/messages?access_token=${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

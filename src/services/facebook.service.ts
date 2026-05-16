@@ -12,7 +12,8 @@ export async function sendFacebookMessage(recipientId: string, text: string, cha
     throw new Error('No access token configured for channel: ' + channel);
   }
 
-  const res = await fetch(`${GRAPH_API}/me/messages?access_token=${token}`, {
+  const pageId = env.FACEBOOK_PAGE_ID || 'me';
+  const res = await fetch(`${GRAPH_API}/${pageId}/messages?access_token=${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

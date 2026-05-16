@@ -26,9 +26,14 @@ interface MessagingEntry {
   postback?: { payload: string; title: string };
 }
 
+interface InstagramChange {
+  field: string;
+  value: MessagingEntry;
+}
+
 interface WebhookBody {
   object: string;
-  entry?: Array<{ messaging?: MessagingEntry[]; changes?: unknown[] }>;
+  entry?: Array<{ messaging?: MessagingEntry[]; changes?: InstagramChange[] }>;
 }
 
 // POST /webhooks/facebook — incoming Messenger & Instagram DM messages
@@ -41,8 +46,15 @@ export async function handleFacebookWebhook(req: Request, res: Response): Promis
   if (body.object !== 'page' && body.object !== 'instagram') return;
 
   for (const entry of body.entry ?? []) {
+    // Messenger format: entry.messaging[]
     for (const event of entry.messaging ?? []) {
       await processEvent(event, body.object);
+    }
+    // Instagram format: entry.changes[].value
+    for (const change of entry.changes ?? []) {
+      if (change.field === 'messages' && change.value?.sender) {
+        await processEvent(change.value, 'instagram');
+      }
     }
   }
 }

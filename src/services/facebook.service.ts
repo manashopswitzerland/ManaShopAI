@@ -2,8 +2,6 @@ import { env } from '../config/env';
 
 const GRAPH_API = 'https://graph.facebook.com/v19.0';
 
-// Page ID for Mana Kendra Mana Shop
-const FACEBOOK_PAGE_ID = '670078626197038';
 
 export async function sendFacebookMessage(recipientId: string, text: string, channel: 'facebook' | 'instagram' = 'facebook'): Promise<void> {
   const token = channel === 'instagram'

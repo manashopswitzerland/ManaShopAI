@@ -106,11 +106,14 @@
     .conv-card.ch-whatsapp::before{background:var(--wa);}
     .conv-card.ch-web::before{background:var(--shop);}
     .conv-card.ch-email::before{background:var(--mail);}
+    .conv-card.ch-facebook::before{background:#1877F2;}
+    .conv-card.ch-instagram::before{background:#833AB4;}
     .conv-card:hover{background:var(--surface2);border-color:var(--border2);}
     .conv-card.selected{background:var(--accent-bg);border-color:var(--accent);}
     .conv-top{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
     .badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:2px 7px;border-radius:5px;}
     .badge.wa{background:var(--wa-bg);color:var(--wa);}.badge.web{background:var(--shop-bg);color:var(--shop);}.badge.email{background:var(--mail-bg);color:var(--mail);}
+    .badge.facebook{background:#e7f0fd;color:#1877F2;}.badge.instagram{background:#f5e9ff;color:#833AB4;}
     .badge.de{background:#f0fdf4;color:#166534;}.badge.en{background:#eff6ff;color:#1d4ed8;}
     .status-dot{width:7px;height:7px;border-radius:50%;margin-left:auto;flex-shrink:0;}
     .status-dot.human_pending{background:var(--pending);animation:blink 1.5s infinite;}
@@ -306,6 +309,8 @@
               <option value="">All Platforms</option>
               <option value="web">🛍 Shopify</option>
               <option value="whatsapp">💬 WhatsApp</option>
+              <option value="facebook">📘 Facebook</option>
+              <option value="instagram">📸 Instagram</option>
               <option value="email">✉️ Email</option>
             </select>
           </div>
@@ -635,12 +640,12 @@ function renderList() {
   let list = conversations;
   if (q) list = list.filter(c => (c.sessionId + '').toLowerCase().includes(q) || (c.customerContact || '').toLowerCase().includes(q));
   if (!list.length) { el.innerHTML = `<div class="conv-empty"><strong>No results</strong>Try a different filter.</div>`; return; }
-  const chLabel = { whatsapp: 'WhatsApp', web: 'Shopify', email: 'Email' };
+  const chLabel = { whatsapp: 'WhatsApp', web: 'Shopify', email: 'Email', facebook: 'Facebook', instagram: 'Instagram' };
   const sLabel  = { human_pending: 'Needs Human', human: 'Active', ai: 'AI', resolved: 'Resolved' };
   el.innerHTML = list.map(c => {
     const last = c.messages?.length ? c.messages[c.messages.length - 1] : null;
     const prev = last ? last.content.replace(/\n/g, ' ').slice(0, 52) + (last.content.length > 52 ? '…' : '') : 'No messages';
-    const cl = { whatsapp: 'wa', web: 'web', email: 'email' }[c.channel] || '';
+    const cl = { whatsapp: 'wa', web: 'web', email: 'email', facebook: 'facebook', instagram: 'instagram' }[c.channel] || '';
     return `<div class="conv-card ch-${c.channel}${c._id === selectedConvId ? ' selected' : ''}" onclick="selectConv('${c._id}')">
       <div class="conv-top"><span class="badge ${cl}">${chLabel[c.channel] || c.channel}</span><div class="status-dot ${c.status}"></div></div>
       <div class="conv-id">${esc(c.customerContact || c.sessionId)}</div>
@@ -716,7 +721,7 @@ async function sendReply() {
   try {
     const r = await api('POST', `/api/dashboard/conversations/${selectedConvId}/reply`, { message: msg });
     ta.value = '';
-    if (r.dispatched) toast(`Sent via ${{ whatsapp: 'WhatsApp', web: 'Shopify', email: 'Email' }[r.channel] || r.channel}`, 'success');
+    if (r.dispatched) toast(`Sent via ${{ whatsapp: 'WhatsApp', web: 'Shopify', email: 'Email', facebook: 'Facebook', instagram: 'Instagram' }[r.channel] || r.channel}`, 'success');
     if (r.dispatchError) toast(`Stored but failed: ${r.dispatchError}`, 'error');
     await fetchConvs(); const c = conversations.find(x => x._id === selectedConvId); if (c) renderConv(c);
   } catch (e) { toast(e.message, 'error'); }

@@ -5,7 +5,7 @@ const GRAPH_API = 'https://graph.facebook.com/v19.0';
 
 export async function sendFacebookMessage(recipientId: string, text: string, channel: 'facebook' | 'instagram' = 'facebook'): Promise<void> {
   const token = channel === 'instagram'
-    ? (env.INSTAGRAM_ACCESS_TOKEN || env.FACEBOOK_PAGE_ACCESS_TOKEN)
+    ? (env.INSTAGRAM_PAGE_ACCESS_TOKEN || env.FACEBOOK_PAGE_ACCESS_TOKEN)
     : env.FACEBOOK_PAGE_ACCESS_TOKEN;
 
   if (!token) {

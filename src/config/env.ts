@@ -45,6 +45,7 @@ const optionalSchema = z.object({
   FACEBOOK_VERIFY_TOKEN: z.string().default(''),
   FACEBOOK_PAGE_ACCESS_TOKEN: z.string().default(''),
   FACEBOOK_PAGE_ID: z.string().default(''),
+  INSTAGRAM_PAGE_ACCESS_TOKEN: z.string().default(''),
   INSTAGRAM_APP_ID: z.string().default(''),
   INSTAGRAM_APP_SECRET: z.string().default(''),
   INSTAGRAM_ACCESS_TOKEN: z.string().default(''),

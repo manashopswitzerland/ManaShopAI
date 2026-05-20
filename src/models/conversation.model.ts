@@ -34,7 +34,7 @@ const ConversationSchema = new Schema<IConversation>(
   {
     channel: {
       type: String,
-      enum: ['whatsapp', 'web', 'email'],
+      enum: ['whatsapp', 'web', 'email', 'facebook', 'instagram'],
       required: true,
       index: true,
     },

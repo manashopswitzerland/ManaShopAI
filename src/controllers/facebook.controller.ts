@@ -36,6 +36,9 @@ interface WebhookBody {
   entry?: Array<{ messaging?: MessagingEntry[]; changes?: InstagramChange[] }>;
 }
 
+// Deduplication: prevent double-processing when both Instagram products fire for the same message
+const recentMids = new Set<string>();
+
 // POST /webhooks/facebook — incoming Messenger & Instagram DM messages
 export async function handleFacebookWebhook(req: Request, res: Response): Promise<void> {
   // Acknowledge immediately so Meta doesn't retry
@@ -62,8 +65,16 @@ export async function handleFacebookWebhook(req: Request, res: Response): Promis
 async function processEvent(event: MessagingEntry, object: string): Promise<void> {
   const senderId = event.sender.id;
   const text = event.message?.text ?? event.postback?.title;
+  const mid = event.message?.mid;
 
   if (!text) return;
+
+  // Skip if we already processed this message (duplicate from second Instagram product)
+  if (mid) {
+    if (recentMids.has(mid)) return;
+    recentMids.add(mid);
+    setTimeout(() => recentMids.delete(mid), 60_000);
+  }
 
   const channel: Channel = object === 'instagram' ? 'instagram' : 'facebook';
   const storeId: StoreId = 'mana-shop'; // single page; extend with page-to-store mapping if needed

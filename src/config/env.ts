@@ -49,6 +49,10 @@ const optionalSchema = z.object({
   INSTAGRAM_APP_ID: z.string().default(''),
   INSTAGRAM_APP_SECRET: z.string().default(''),
   INSTAGRAM_ACCESS_TOKEN: z.string().default(''),
+
+  // Mana Kendra custom knowledge assistant (OpenAI Assistants API)
+  KENDRA_OPENAI_API_KEY: z.string().default(''),
+  KENDRA_ASSISTANT_ID: z.string().default(''),
 });
 
 const envSchema = requiredSchema.merge(optionalSchema);

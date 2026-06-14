@@ -28,7 +28,8 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "typecheck": "tsc --noEmit",
-    "seed": "ts-node-dev --transpile-only src/scripts/seed-knowledge-base.ts"
+    "seed": "ts-node-dev --transpile-only src/scripts/seed-knowledge-base.ts",
+    "setup-kendra": "ts-node-dev --transpile-only src/scripts/setup-kendra-assistant.ts"
   },
   "keywords": [],
   "author": "",

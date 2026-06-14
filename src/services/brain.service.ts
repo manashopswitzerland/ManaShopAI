@@ -6,6 +6,7 @@ import { Conversation } from '../models/conversation.model';
 import { BusinessContext } from '../models/business-context.model';
 import { Lead } from '../models/lead.model';
 import { broadcastNotification } from './notifications';
+import { callKendraAssistant, isKendraAssistantEnabled } from './kendra-assistant.service';
 import type {
   BrainInput,
   BrainOutput,
@@ -429,25 +430,41 @@ export class BrainService {
       businessContextText = ctx?.content?.trim() ?? '';
     } catch { /* DB unavailable */ }
 
-    // 6. Build OpenAI messages array
+    // 6. Build system prompt (used for both paths)
     const systemPrompt = buildSystemPrompt(storeId, contextDocs, businessContextText);
 
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: 'system', content: systemPrompt },
-    ];
+    let result: { text: string; tokensUsed: number };
 
-    for (const msg of recentMessages) {
-      messages.push({ role: msg.role as 'user' | 'assistant', content: msg.content });
+    if (storeId === 'mana-kendra' && isKendraAssistantEnabled()) {
+      // Mana Kendra: use the custom knowledge assistant (file_search over DOCX knowledge base)
+      const kendraResult = await callKendraAssistant({
+        sessionId,
+        userMessage,
+        additionalInstructions: systemPrompt,
+        threadId: conversation?.threadId,
+      });
+      result = { text: kendraResult.reply, tokensUsed: kendraResult.tokensUsed };
+
+      // Persist thread ID so future messages reuse the same thread
+      if (conversation && kendraResult.threadId !== conversation.threadId) {
+        conversation.threadId = kendraResult.threadId;
+      }
+    } else {
+      // Standard path: chat completions with system prompt + history
+      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+        { role: 'system', content: systemPrompt },
+      ];
+      for (const msg of recentMessages) {
+        messages.push({ role: msg.role as 'user' | 'assistant', content: msg.content });
+      }
+      messages.push({ role: 'user', content: userMessage });
+
+      result = await this.aiProvider.complete({
+        messages,
+        model: env.OPENAI_MODEL,
+        temperature: 0.4,
+      });
     }
-
-    messages.push({ role: 'user', content: userMessage });
-
-    // 6. Call AI provider
-    const result = await this.aiProvider.complete({
-      messages,
-      model: env.OPENAI_MODEL,
-      temperature: 0.4,
-    });
 
     result.text = formatBullets(result.text);
 

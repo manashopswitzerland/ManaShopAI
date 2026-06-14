@@ -17,6 +17,7 @@ export interface IConversation extends Document {
   messages: IMessage[];
   awaitingContact: boolean;
   leadCaptured: boolean;
+  threadId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,6 +56,7 @@ const ConversationSchema = new Schema<IConversation>(
     messages: { type: [MessageSchema], default: [] },
     awaitingContact: { type: Boolean, default: false },
     leadCaptured: { type: Boolean, default: false },
+    threadId: { type: String },
   },
   {
     timestamps: true,

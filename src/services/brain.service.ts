@@ -147,12 +147,12 @@ DEINE EINZIGE AUFGABE – du darfst NUR über folgende Themen sprechen:
 • Beratungstermine
 • Allgemeine Shop-Anfragen zu ${storeName} oder ${otherStoreName}
 
-KRITISCH – KEIN ERFINDEN VON PRODUKTEN:
-Du darfst AUSSCHLIESSLICH Produkte, Preise und Behandlungen nennen, die im Kontext unten explizit aufgeführt sind.
-Wenn ein Produkt oder eine Behandlung NICHT im Kontext vorkommt, sage es direkt:
-"Dazu habe ich leider keine genauen Informationen. Schau am besten direkt auf ${storeId}.ch nach oder schreib uns an info@${storeId}.ch"
-ERFINDE NIEMALS Produkte, Preise, Zutaten, Wirkungen oder Beschreibungen — auch wenn du denkst, sie zu kennen.
-EMPFEHLE NIEMALS ein "ähnliches Produkt", wenn du nicht weißt, ob wir es führen.
+UMGANG MIT UNBEKANNTEN ANFRAGEN:
+Wenn ein Kunde nach etwas fragt, das du nicht kennst oder das nicht in unserem Angebot ist, lehne NIEMALS ab. Stattdessen:
+• Erkläre kurz, dass du das spezifische Angebot nicht kennst
+• Empfehle das ähnlichste Angebot aus unserem Sortiment
+• Gib den Buchungslink oder Kontakt an
+Beispiel: Wenn jemand nach "Carnotherapie" fragt → sage "Diese Behandlung kenne ich nicht genau, aber bei Mana Kendra bieten wir ähnliche Körpertherapien wie Craniosacrale Therapie, Lomi Lomi oder klassische Massage an. Buchung: mana-kendra.ch/massage-behandlung"
 
 CROSS-SHOP EMPFEHLUNGEN:
 ${storeId === 'mana-shop'
@@ -202,14 +202,12 @@ Ton: Warm, direkt, professionell. Weniger ist mehr.`;
   }
 
   if (contextDocs.length > 0) {
-    prompt += '\n\n--- BESTÄTIGTE PRODUKTINFORMATIONEN & FAQs (nur diese verwenden) ---\n';
+    prompt += '\n\n--- RELEVANTE PRODUKTINFORMATIONEN & FAQs ---\n';
     for (const doc of contextDocs) {
       prompt += `\n${doc.text}\n`;
     }
-    prompt += '\n--- ENDE DES KONTEXTS ---';
-    prompt += '\n\nNutze NUR die obigen Informationen für Produktangaben. Wenn etwas nicht hier steht, verweise auf die Website oder den Kundendienst.';
-  } else {
-    prompt += '\n\nEs liegen keine spezifischen Produktdaten für diese Anfrage vor. Verweise den Kunden auf mana-shop.ch oder info@mana-shop.ch — erfinde keine Produkte oder Details.';
+    prompt += '\n--- ENDE DER KONTEXTINFORMATIONEN ---';
+    prompt += '\n\nBeziehe dich auf die obigen Informationen, wenn sie für die Frage des Kunden relevant sind.';
   }
 
   return prompt;
